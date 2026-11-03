@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scanner Nilai Saham</title>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --ink:#15181d; --muted:#5f6773; --line:#e3e6ea;
+  --accent:#2457d6; --accent-ink:#ffffff; --good:#13804a; --good-bg:#e3f4ea; --warn:#a86400; --warn-bg:#fdf1dc;
+  --bad:#c0362c; --bad-bg:#fbe6e4; --neutral-bg:#eef0f3; --bar:#d7dbe1;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1115; --panel:#171a20; --ink:#e8eaee; --muted:#9aa2ae; --line:#272c35;
+    --accent:#7ea2ff; --accent-ink:#0f1115; --good:#4cc68a; --good-bg:#14301f; --warn:#f0b14a; --warn-bg:#33270f;
+    --bad:#ff7b70; --bad-bg:#3a1a18; --neutral-bg:#222731; --bar:#323946;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1115; --panel:#171a20; --ink:#e8eaee; --muted:#9aa2ae; --line:#272c35;
+  --accent:#7ea2ff; --accent-ink:#0f1115; --good:#4cc68a; --good-bg:#14301f; --warn:#f0b14a; --warn-bg:#33270f;
+  --bad:#ff7b70; --bad-bg:#3a1a18; --neutral-bg:#222731; --bar:#323946;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1300px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:22px;margin:0}
+h2{font-size:14px;margin:0 0 10px}
+.sub{color:var(--muted);font-size:13px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.search{margin:16px 0 12px;padding:18px 16px}
+.search form{display:flex;gap:8px}
+.search input{flex:1;min-width:0;font-size:18px;padding:10px 12px;text-transform:uppercase;letter-spacing:.5px}
+.search button[type=submit]{font-size:16px;padding:10px 22px;background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center;font-size:12px;color:var(--muted)}
+.chip{padding:3px 10px;border-radius:999px;font-size:12px}
+.queue{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.queue div{display:flex;align-items:center;gap:8px;font-size:13px}
+.queue .err{color:var(--bad)}
+.queue button{padding:0 6px;font-size:12px}
+.spin{width:14px;height:14px;border:2px solid var(--bar);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite;flex:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+.grid2{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px}
+@media(min-width:900px){.grid2{grid-template-columns:3fr 2fr}}
+.assume{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 14px}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+input[type=number]{width:100%}
+.methods{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px}
+.methods label{flex-direction:row;align-items:center;color:var(--ink);font-size:13px}
+button{font:inherit;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:disabled{opacity:.6;cursor:default}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:7px 8px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th{font-size:12px;color:var(--muted);font-weight:600;cursor:pointer;user-select:none;background:var(--panel)}
+th:hover{color:var(--ink)}
+th.l,td.l{text-align:left}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--neutral-bg)}
+tbody tr.sel{background:var(--neutral-bg);outline:2px solid var(--accent);outline-offset:-2px}
+.code{font-weight:650}
+.nm{color:var(--muted);font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis}
+.pos{color:var(--good)} .neg{color:var(--bad)} .mut{color:var(--muted)}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600}
+.b-buy{background:var(--good-bg);color:var(--good)}
+.b-under{background:var(--good-bg);color:var(--good);opacity:.8}
+.b-fair{background:var(--neutral-bg);color:var(--muted)}
+.b-over{background:var(--bad-bg);color:var(--bad)}
+.b-na{background:var(--neutral-bg);color:var(--muted)}
+.tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:4px;margin-left:4px;background:var(--warn-bg);color:var(--warn)}
+.tag.bv{background:var(--good-bg);color:var(--good)}
+.mos{display:flex;align-items:center;gap:6px;justify-content:flex-end}
+.mosbar{width:70px;height:8px;background:var(--bar);border-radius:4px;position:relative;overflow:hidden}
+.mosbar i{position:absolute;top:0;bottom:0}
+.mosbar::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--muted)}
+.big{display:flex;flex-wrap:wrap;gap:12px 28px;margin:14px 0 4px}
+.big .v{font-size:26px;font-weight:650;font-variant-numeric:tabular-nums}
+.big .l{font-size:12px;color:var(--muted)}
+.verdict{margin:10px 0 0;padding:10px 12px;border-radius:8px;background:var(--neutral-bg);font-size:13px}
+.verdict.good{background:var(--good-bg)} .verdict.bad{background:var(--bad-bg)}
+.cols{display:grid;grid-template-columns:1fr;gap:4px 24px;margin-top:12px}
+@media(min-width:600px){.cols{grid-template-columns:1fr 1fr}}
+.row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);gap:8px}
+.strip{position:relative;height:56px;margin:44px 14px 8px}
+.strip .axis{position:absolute;left:0;right:0;top:26px;height:4px;background:var(--bar);border-radius:2px}
+.strip .range{position:absolute;top:22px;height:12px;background:var(--good-bg);border:1px solid var(--good);border-radius:6px}
+.strip .m{position:absolute;top:18px;width:2px;height:20px;background:var(--muted)}
+.strip .m span{position:absolute;left:50%;transform:translateX(-50%);font-size:10px;color:var(--muted);white-space:nowrap}
+.strip .p{position:absolute;top:12px;width:3px;height:32px;background:var(--ink)}
+.strip .p span{position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:650;white-space:nowrap}
+.strip .f{position:absolute;top:14px;width:3px;height:28px;background:var(--good)}
+.note{font-size:12px;color:var(--muted);margin-top:14px}
+.note b{color:var(--ink)}
+.empty{padding:36px 12px;text-align:center;color:var(--muted)}
+.headrow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Scanner Nilai Saham IDX</h1>
+  <div class="sub">Ketik kode emiten, lalu data fundamental diambil langsung dari Yahoo Finance dan dihitung nilai wajar serta margin of safety-nya.</div>
+
+  <div class="panel search">
+    <form id="form">
+      <input id="code" placeholder="Kode emiten, mis. BBRI atau BBRI, TLKM, ASII" autocomplete="off" autofocus>
+      <button type="submit" id="go">Scan</button>
+    </form>
+    <div class="chips">Coba:
+      <button class="chip" data-c="BBRI">BBRI</button><button class="chip" data-c="TLKM">TLKM</button>
+      <button class="chip" data-c="ASII">ASII</button><button class="chip" data-c="ADRO">ADRO</button>
+      <button class="chip" data-c="UNVR">UNVR</button><button class="chip" data-c="BBCA, BMRI, BBNI">Bank besar</button>
+    </div>
+    <div class="queue" id="queue"></div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel" id="detail"></div>
+    <div class="panel">
+      <div class="headrow"><h2 style="margin:0">Asumsi valuasi</h2><button id="reset">Reset</button></div>
+      <div class="assume">
+        <label>Cost of equity / return diharapkan (%)<input type="number" id="a-r" step="0.5"></label>
+        <label>Pertumbuhan jangka panjang g (%)<input type="number" id="a-g" step="0.5"></label>
+        <label>Pertumbuhan 5 thn pertama (%)<input type="number" id="a-gh" step="0.5"></label>
+        <label>Yield SBN 10 thn (%)<input type="number" id="a-y" step="0.25"></label>
+        <label>PER wajar (x)<input type="number" id="a-pe" step="0.5"></label>
+        <label>EV/EBITDA wajar (x)<input type="number" id="a-evm" step="0.5"></label>
+        <label>Target margin of safety (%)<input type="number" id="a-mos" step="5"></label>
+        <label>Minimal metode valid<input type="number" id="a-min" step="1" min="1" max="11"></label>
+        <label>Pakai EPS<select id="a-eps"><option value="ttm">TTM (12 bln terakhir)</option><option value="fwd">Forward (estimasi analis)</option></select></label>
+        <label>Gabungan metode<select id="a-agg"><option value="median">Median</option><option value="mean">Rata-rata</option><option value="min">Paling konservatif</option></select></label>
+      </div>
+      <div class="methods" id="methods"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="headrow">
+      <h2 style="margin:0">Riwayat scan</h2>
+      <div style="display:flex;gap:8px"><button id="rescan">Scan ulang semua</button><button id="clear">Hapus riwayat</button></div>
+    </div>
+    <div class="tablewrap">
+      <table><thead><tr id="thead"></tr></thead><tbody id="tbody"></tbody></table>
+    </div>
+    <div class="note">
+      <b>MoS</b> = (Nilai wajar − Harga) ÷ Nilai wajar. Positif (+) = harga diskon dari nilai wajar; negatif (−) = harga premium.
+      <b>Harga beli</b> = Nilai wajar × (1 − target MoS). <span class="tag bv">&lt;BV</span> = harga di bawah nilai buku;
+      <span class="tag">ROE↓</span> / <span class="tag">Rugi</span> = waspada value trap.
+      Data Yahoo Finance bisa terlambat atau keliru; cek ulang ke laporan keuangan. Alat bantu screening, bukan rekomendasi investasi.
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "api/scan";
+const METHODS = [
+  {id:"bv",   ab:"BV",   name:"Nilai buku (BVPS)", desc:"Ekuitas per saham. PBV < 1 berarti harga di bawah nilai buku."},
+  {id:"pbvh", ab:"PBVh", name:"PBV historis", desc:"Rata-rata PBV 4 tahun buku terakhir × BVPS sekarang."},
+  {id:"pbv",  ab:"JPBV", name:"Justified PBV", desc:"BVPS × (ROE − g) ÷ (r − g). Cocok untuk bank & emiten aset berat."},
+  {id:"gn",   ab:"GN",   name:"Graham Number", desc:"√(22,5 × EPS × BVPS): batas atas harga wajar ala Benjamin Graham (PER 15 × PBV 1,5)."},
+  {id:"gf",   ab:"GF",   name:"Graham Formula", desc:"EPS × (8,5 + 2 × pertumbuhan 5 thn) × 4,4 ÷ yield SBN 10 thn."},
+  {id:"per",  ab:"PER",  name:"PER wajar", desc:"EPS × PER wajar."},
+  {id:"perh", ab:"PERh", name:"PER historis", desc:"Rata-rata PER 4 tahun buku terakhir × EPS sekarang."},
+  {id:"epv",  ab:"EPV",  name:"Earnings Power Value", desc:"EPS ÷ r: nilai bila laba tidak tumbuh sama sekali (konservatif)."},
+  {id:"ddm",  ab:"DDM",  name:"Dividend Discount", desc:"DPS × (1 + g) ÷ (r − g). Hanya untuk emiten yang membagi dividen."},
+  {id:"dcf",  ab:"DCF",  name:"DCF arus kas bebas", desc:"Free cash flow per saham tumbuh 5 thn, lalu tumbuh g selamanya, didiskonto r."},
+  {id:"ev",   ab:"EV",   name:"EV/EBITDA wajar", desc:"(EBITDA × EV/EBITDA wajar − utang bersih) ÷ jumlah saham. Tidak berlaku untuk bank."},
+];
+const DEFAULTS = {r:12, g:5, gh:8, y:6.5, pe:12, evm:7, mos:30, minN:5, eps:"ttm", agg:"median",
+  on:Object.fromEntries(METHODS.map(m=>[m.id,true]))};
+const LS_A = "idx-scanner-asumsi-v1", LS_S = "idx-scanner-riwayat-v1";
+
+let A = loadA();
+let S = loadS();          // kode -> data emiten + waktu scan
+let Q = {};               // kode -> "scanning" | pesan error
+let selected = Object.keys(S).sort((a,b)=>S[b].at-S[a].at)[0] || null;
+let sortKey = "at", sortDir = -1, rows = [];
+
+function loadA(){
+  try{ const s = JSON.parse(localStorage.getItem(LS_A)); if(s) return {...DEFAULTS, ...s, on:{...DEFAULTS.on, ...(s.on||{})}}; }catch(e){}
+  return structuredClone(DEFAULTS);
+}
+function loadS(){ try{ return JSON.parse(localStorage.getItem(LS_S)) || {}; }catch(e){ return {}; } }
+function saveA(){ try{ localStorage.setItem(LS_A, JSON.stringify(A)); }catch(e){} }
+function saveS(){ try{ localStorage.setItem(LS_S, JSON.stringify(S)); }catch(e){} }
+
+const fmtN = (v,d=0) => v==null||!isFinite(v) ? "–" : v.toLocaleString("id-ID",{maximumFractionDigits:d,minimumFractionDigits:d});
+const fmtP = (v,d=1,sign=false) => v==null||!isFinite(v) ? "–" : (sign&&v>0?"+":"") + (v*100).toLocaleString("id-ID",{maximumFractionDigits:d,minimumFractionDigits:d}) + "%";
+const fmtX = v => v==null||!isFinite(v) ? "–" : fmtN(v,2)+"x";
+const fmtCap = v => v==null ? "–" : v>=1e12 ? fmtN(v/1e12,1)+" T" : fmtN(v/1e9,0)+" M";
+const fmtT = t => new Date(t).toLocaleString("id-ID",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+
+// ---------- Scan ----------
+function parseCodes(text){
+  return [...new Set(text.toUpperCase().split(/[\s,;]+/).map(c=>c.replace(/\.JK$/,"")).filter(Boolean))].slice(0,30);
+}
+
+async function scan(codes){
+  if(!codes.length) return;
+  codes.forEach(c => Q[c] = "scanning");
+  renderQueue();
+  await Promise.all(codes.map(async c => {
+    try{
+      const r = await fetch(`${API}?code=${encodeURIComponent(c)}`);
+      const j = await r.json().catch(() => ({error:`Server tidak merespons dengan benar (HTTP ${r.status})`}));
+      if(!r.ok || j.error) throw new Error(j.error || `HTTP ${r.status}`);
+      S[j.stock.code] = {...j.stock, at:Date.now()};
+      delete Q[c];
+      saveS();
+      selected = j.stock.code;
+      render();
+    }catch(e){
+      Q[c] = e instanceof TypeError ? "Tidak bisa menghubungi server scan. Pastikan jalankan.bat masih berjalan." : e.message;
+    }
+    renderQueue();
+  }));
+}
+
+function renderQueue(){
+  const busy = Object.values(Q).some(v=>v==="scanning");
+  $("go").disabled = busy; $("go").textContent = busy ? "Scanning…" : "Scan";
+  $("queue").innerHTML = Object.entries(Q).map(([c,v]) => v==="scanning"
+    ? `<div><span class="spin"></span>Scanning <b>${esc(c)}</b>: mengambil harga, laporan keuangan & dividen…</div>`
+    : `<div class="err"><b>${esc(c)}</b>: ${esc(v)} <button data-x="${esc(c)}" title="Tutup">×</button></div>`).join("");
+}
+
+// ---------- Valuasi ----------
+function value(s){
+  const r = A.r/100, g = A.g/100, gh = A.gh/100;
+  const eps = A.eps==="fwd" && s.fwdEps ? s.fwdEps : s.eps;
+  const v = {};
+  if(s.bvps>0) v.bv = s.bvps;
+  if(s.bvps>0 && s.histPbv) v.pbvh = s.histPbv.avg*s.bvps;
+  if(s.bvps>0 && s.roe!=null && r>g){ const x = s.bvps*(s.roe-g)/(r-g); if(x>0) v.pbv = x; }
+  if(eps>0 && s.bvps>0) v.gn = Math.sqrt(22.5*eps*s.bvps);
+  if(eps>0 && A.y>0) v.gf = eps*(8.5+2*A.gh)*4.4/A.y;
+  if(eps>0) v.per = eps*A.pe;
+  if(eps>0 && s.histPe) v.perh = s.histPe.avg*eps;
+  if(eps>0 && r>0) v.epv = eps/r;
+  if(s.dps>0 && r>g) v.ddm = s.dps*(1+g)/(r-g);
+  if(s.fcfps>0 && r>g){
+    let pv = 0, f = s.fcfps;
+    for(let t=1; t<=5; t++){ f *= 1+gh; pv += f/(1+r)**t; }
+    v.dcf = pv + f*(1+g)/(r-g)/(1+r)**5;
+  }
+  if(s.ebitda>0 && s.shares>0){ const x = (s.ebitda*A.evm - (s.netDebt||0))/s.shares; if(x>0) v.ev = x; }
+  const used = METHODS.filter(m => A.on[m.id] && v[m.id]!=null).map(m => v[m.id]);
+  let fair = null;
+  if(used.length){
+    const sorted = [...used].sort((a,b)=>a-b);
+    if(A.agg==="min") fair = sorted[0];
+    else if(A.agg==="mean") fair = used.reduce((a,b)=>a+b,0)/used.length;
+    else { const m = sorted.length>>1; fair = sorted.length%2 ? sorted[m] : (sorted[m-1]+sorted[m])/2; }
+  }
+  const mos = fair ? (fair - s.price)/fair : null;
+  const target = A.mos/100;
+  let status = "na";
+  if(mos!=null) status = mos>=target ? "buy" : mos>0 ? "under" : mos>-0.15 ? "fair" : "over";
+  // Emiten rugi hanya dinilai dari nilai buku: jangan dilabeli "murah".
+  if(status==="buy" && !(eps>0)) status = "under";
+  // Belum cukup metode yang bisa dihitung: nilai wajar belum layak dijadikan patokan.
+  if(mos!=null && used.length < A.minN) status = "few";
+  return {
+    ...s, epsUsed:eps, vals:v, n:used.length, fair,
+    lo: used.length ? Math.min(...used) : null, hi: used.length ? Math.max(...used) : null,
+    mos, upside: fair ? fair/s.price-1 : null, buyAt: fair ? fair*(1-target) : null,
+    pbv: s.bvps>0 ? s.price/s.bvps : null, per: eps>0 ? s.price/eps : null,
+    dy: s.dps ? s.dps/s.price : null, status,
+    weak: !(eps>0) ? "Rugi" : (s.roe!=null && s.roe<0.08 ? "ROE↓" : null),
+  };
+}
+
+const STATUS = {
+  buy:  ["b-buy","Murah (MoS cukup)"],
+  under:["b-under","Di bawah wajar"],
+  fair: ["b-fair","Sekitar wajar"],
+  over: ["b-over","Mahal"],
+  na:   ["b-na","Data kurang"],
+  few:  ["b-na","Metode kurang"],
+};
+const STATUS_ORDER = {buy:5,under:4,fair:3,over:2,few:1,na:0};
+const statusBadge = s => {
+  const [cls,lab] = STATUS[s.status];
+  return `<span class="badge ${cls}">${s.status==="few" ? `${lab} (${s.n}/${A.minN})` : lab}</span>`;
+};
+const COLS = [
+  {k:"code",  t:"Saham", l:true},
+  {k:"price", t:"Harga"},
+  {k:"pbv",   t:"PBV"},
+  {k:"per",   t:"PER"},
+  {k:"roe",   t:"ROE"},
+  {k:"dy",    t:"Div. yield"},
+  {k:"bvps",  t:"Nilai buku"},
+  {k:"fair",  t:"Nilai wajar"},
+  {k:"mos",   t:"MoS (+/−)"},
+  {k:"buyAt", t:"Harga beli"},
+  {k:"status",t:"Status", l:true},
+  {k:"at",    t:"Discan"},
+];
+
+// ---------- Render ----------
+function render(){
+  rows = Object.values(S).map(value);
+  rows.sort((a,b)=>{
+    let x = a[sortKey], y = b[sortKey];
+    if(sortKey==="status"){ x = STATUS_ORDER[x]; y = STATUS_ORDER[y]; }
+    if(x==null && y==null) return 0; if(x==null) return 1; if(y==null) return -1;
+    return (typeof x==="string" ? x.localeCompare(y) : x-y) * sortDir;
+  });
+  $("thead").innerHTML = COLS.map(c =>
+    `<th class="${c.l?"l":""}" data-k="${c.k}">${c.t}${sortKey===c.k?(sortDir>0?" ▲":" ▼"):""}</th>`).join("") + "<th></th>";
+  $("tbody").innerHTML = rows.length ? rows.map(s => {
+    const w = s.mos==null ? 0 : Math.min(Math.abs(s.mos),1)*50;
+    const bar = s.mos==null ? "" : s.mos>=0
+      ? `<i style="left:50%;width:${w}%;background:var(--good)"></i>`
+      : `<i style="right:50%;width:${w}%;background:var(--bad)"></i>`;
+    return `<tr data-c="${s.code}" class="${selected===s.code?"sel":""}">
+      <td class="l"><div class="code">${s.code}${s.pbv!=null&&s.pbv<1?'<span class="tag bv">&lt;BV</span>':""}${s.weak?`<span class="tag">${s.weak}</span>`:""}</div><div class="nm" title="${esc(s.name)}">${esc(s.name)}</div></td>
+      <td>${fmtN(s.price)}</td>
+      <td>${fmtX(s.pbv)}</td>
+      <td>${fmtX(s.per)}</td>
+      <td>${fmtP(s.roe)}</td>
+      <td>${fmtP(s.dy)}</td>
+      <td>${fmtN(s.bvps)}</td>
+      <td>${fmtN(s.fair)}<div class="nm">${s.n>1?`${s.n} metode · ${fmtN(s.lo)} – ${fmtN(s.hi)}`:""}</div></td>
+      <td><div class="mos"><span class="${s.mos>0?"pos":s.mos<0?"neg":""}" style="font-weight:650">${fmtP(s.mos,1,true)}</span><div class="mosbar">${bar}</div></div></td>
+      <td>${fmtN(s.buyAt)}</td>
+      <td class="l">${statusBadge(s)}</td>
+      <td class="mut">${fmtT(s.at)}</td>
+      <td><button data-del="${s.code}" title="Hapus dari riwayat">×</button></td>
+    </tr>`;}).join("") : `<tr><td colspan="${COLS.length+1}" class="empty">Belum ada saham yang discan.</td></tr>`;
+  $("rescan").disabled = $("clear").disabled = !rows.length;
+  renderDetail();
+}
+
+function renderDetail(){
+  const s = rows.find(x=>x.code===selected);
+  if(!s){ $("detail").innerHTML = `<div class="empty">Ketik kode emiten di atas lalu tekan <b>Scan</b>.<br>Hasil valuasinya akan muncul di sini.</div>`; return; }
+  let verdict = "Data belum cukup untuk menghitung nilai wajar.", vcls = "";
+  if(s.mos!=null){
+    const pct = fmtP(Math.abs(s.mos),1);
+    verdict = s.mos>=0
+      ? `Harga ${fmtN(s.price)} berada <b>${pct} di bawah</b> nilai wajar ${fmtN(s.fair)}. ${s.status==="buy" ? `Margin of safety sudah memenuhi target ${A.mos}%.` : `Belum memenuhi target MoS ${A.mos}%; harga beli ideal ≤ <b>${fmtN(s.buyAt)}</b>.`}`
+      : `Harga ${fmtN(s.price)} berada <b>${pct} di atas</b> nilai wajar ${fmtN(s.fair)}. Harga beli ideal ≤ <b>${fmtN(s.buyAt)}</b> (MoS ${A.mos}%).`;
+    vcls = s.status==="buy"||s.status==="under" ? "good" : s.status==="over" ? "bad" : "";
+    if(s.status==="few") verdict += ` <b>Catatan:</b> baru ${s.n} metode yang bisa dihitung (minimal ${A.minN}), jadi nilai wajar ini belum layak jadi patokan.${s.histPbv===undefined ? " Coba <b>Scan ulang</b> untuk mengambil data metode baru." : ""}`;
+    if(s.weak) verdict += ` <b>Hati-hati:</b> ${s.weak==="Rugi" ? "emiten sedang rugi, nilai hanya dari nilai buku." : "ROE di bawah 8%, bisa jadi value trap."}`;
+  }
+  const pts = [s.price, ...Object.values(s.vals)].filter(v=>v>0);
+  const max = Math.max(...pts)*1.08, pos = v => (v/max*100).toFixed(2)+"%";
+  // Label metode diselang-seling tingginya agar tidak bertumpuk saat nilainya berdekatan.
+  const marks = METHODS.filter(m=>s.vals[m.id]!=null && A.on[m.id])
+    .sort((a,b)=>s.vals[a.id]-s.vals[b.id])
+    .map((m,i)=>`<div class="m" style="left:${pos(s.vals[m.id])}" title="${m.name}: ${fmtN(s.vals[m.id])}"><span style="top:${-16-12*(i%3)}px">${m.ab}</span></div>`).join("");
+  $("detail").innerHTML = `
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+      <div><h2 style="margin:0;font-size:18px">${s.code}</h2><div class="sub">${esc(s.name)} · ${esc(s.industry||s.sector)} · Kap. ${fmtCap(s.mcap)}</div></div>
+      <div style="display:flex;gap:8px;align-items:center">${statusBadge(s)}<button data-re="${s.code}">Scan ulang</button></div>
+    </div>
+    <div class="big">
+      <div><div class="v">${fmtN(s.price)}</div><div class="l">Harga sekarang</div></div>
+      <div><div class="v">${fmtN(s.fair)}</div><div class="l">Nilai wajar · ${s.n} metode (${fmtN(s.lo)} – ${fmtN(s.hi)})</div></div>
+      <div><div class="v ${s.mos>0?"pos":s.mos<0?"neg":""}">${fmtP(s.mos,1,true)}</div><div class="l">Margin of safety</div></div>
+      <div><div class="v">${fmtN(s.buyAt)}</div><div class="l">Harga beli (MoS ${A.mos}%)</div></div>
+    </div>
+    <div class="verdict ${vcls}">${verdict}</div>
+    ${s.fair ? `<div class="strip">
+      <div class="axis"></div>
+      ${s.n>1?`<div class="range" style="left:${pos(s.lo)};width:calc(${pos(s.hi)} - ${pos(s.lo)})"></div>`:""}
+      ${marks}
+      <div class="f" style="left:${pos(s.fair)}" title="Nilai wajar ${fmtN(s.fair)}"></div>
+      <div class="p" style="left:${pos(s.price)}"><span>Harga ${fmtN(s.price)}</span></div>
+    </div>`:""}
+    <div class="cols">
+      <div>
+        <h2 style="margin-top:10px">Per metode (${s.n} dari ${METHODS.length} bisa dihitung)</h2>
+        ${METHODS.map(m=>{
+          const v = s.vals[m.id], mm = v ? (v-s.price)/v : null;
+          return `<div class="row" title="${m.desc}" style="${A.on[m.id]?"":"opacity:.45"}"><span>${m.name}</span><span>${fmtN(v)} <span class="${mm>0?"pos":mm<0?"neg":"mut"}" style="display:inline-block;min-width:56px;text-align:right">${fmtP(mm,0,true)}</span></span></div>`;
+        }).join("")}
+      </div>
+      <div>
+        <h2 style="margin-top:10px">Data dasar</h2>
+        <div class="row"><span>PBV / PER</span><span>${fmtX(s.pbv)} / ${fmtX(s.per)}</span></div>
+        <div class="row"><span>EPS ${A.eps==="fwd"&&s.fwdEps?"(forward)":"(TTM)"} / BVPS</span><span>${fmtN(s.epsUsed,1)} / ${fmtN(s.bvps,1)}${s.finCcy!=="IDR"?` <span class="mut">(BV dari ${s.finCcy})</span>`:""}</span></div>
+        <div class="row"><span>ROE / DER</span><span>${fmtP(s.roe)} / ${s.der!=null?fmtN(s.der/100,2)+"x":"–"}</span></div>
+        <div class="row"><span>DPS 12 bln / yield</span><span>${fmtN(s.dps,1)} / ${fmtP(s.dy)}</span></div>
+        <div class="row"><span>Tumbuh laba / pendapatan</span><span>${fmtP(s.epsGrowth,0,true)} / ${fmtP(s.revGrowth,0,true)}</span></div>
+        <div class="row" title="Rata-rata ${s.histYears?.join(", ")||"–"}"><span>PBV historis rata-rata (min–maks)</span><span>${s.histPbv?`${fmtX(s.histPbv.avg)} (${fmtN(s.histPbv.min,2)}–${fmtN(s.histPbv.max,2)})`:"–"}</span></div>
+        <div class="row" title="Rata-rata ${s.histYears?.join(", ")||"–"}"><span>PER historis rata-rata (min–maks)</span><span>${s.histPe?`${fmtX(s.histPe.avg)} (${fmtN(s.histPe.min,1)}–${fmtN(s.histPe.max,1)})`:"–"}</span></div>
+        <div class="row"><span>FCF per saham / EBITDA</span><span>${fmtN(s.fcfps,1)} / ${fmtCap(s.ebitda)}</span></div>
+        <div class="row"><span>Rentang 52 minggu</span><span>${fmtN(s.low52)} – ${fmtN(s.high52)}</span></div>
+      </div>
+    </div>
+    <div class="note">Data diambil ${fmtT(s.at)} dari Yahoo Finance.</div>`;
+}
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s??"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+function syncInputs(){
+  $("a-r").value=A.r; $("a-g").value=A.g; $("a-gh").value=A.gh; $("a-y").value=A.y; $("a-pe").value=A.pe;
+  $("a-evm").value=A.evm; $("a-mos").value=A.mos; $("a-min").value=A.minN; $("a-eps").value=A.eps; $("a-agg").value=A.agg;
+  $("methods").innerHTML = METHODS.map(m=>`<label title="${m.desc}"><input type="checkbox" data-m="${m.id}" ${A.on[m.id]?"checked":""}> ${m.name}</label>`).join("");
+}
+
+function init(){
+  if(location.protocol==="file:"){
+    $("queue").innerHTML = `<div class="err">Halaman ini perlu server scan. Buka lewat <b>jalankan.bat</b> (alamat http://localhost:8765), bukan dengan klik dua kali file HTML.</div>`;
+  }
+  syncInputs();
+  $("form").onsubmit = e => { e.preventDefault(); const c = parseCodes($("code").value); $("code").value = ""; scan(c); };
+  document.querySelector(".chips").onclick = e => { const c = e.target.dataset.c; if(c) scan(parseCodes(c)); };
+  $("queue").onclick = e => { const c = e.target.dataset.x; if(c){ delete Q[c]; renderQueue(); }};
+  const num = (id,key)=>$(id).addEventListener("input",e=>{ const v=parseFloat(e.target.value); if(isFinite(v)){ A[key]=v; saveA(); render(); }});
+  num("a-r","r"); num("a-g","g"); num("a-gh","gh"); num("a-y","y"); num("a-pe","pe");
+  num("a-evm","evm"); num("a-mos","mos"); num("a-min","minN");
+  $("a-eps").onchange = e=>{ A.eps=e.target.value; saveA(); render(); };
+  $("a-agg").onchange = e=>{ A.agg=e.target.value; saveA(); render(); };
+  $("methods").onchange = e=>{ const m=e.target.dataset.m; if(m){ A.on[m]=e.target.checked; saveA(); render(); }};
+  $("reset").onclick = ()=>{ A = structuredClone(DEFAULTS); saveA(); syncInputs(); render(); };
+  $("thead").onclick = e=>{ const k=e.target.closest("th")?.dataset.k; if(!k) return; sortDir = sortKey===k ? -sortDir : (k==="code"?1:-1); sortKey=k; render(); };
+  $("tbody").onclick = e=>{
+    const del = e.target.dataset.del;
+    if(del){ delete S[del]; if(selected===del) selected=null; saveS(); render(); return; }
+    const c = e.target.closest("tr")?.dataset.c;
+    if(c){ selected=c; render(); if(innerWidth<900) $("detail").scrollIntoView({behavior:"smooth"}); }
+  };
+  $("detail").onclick = e=>{ const c=e.target.dataset.re; if(c) scan([c]); };
+  $("rescan").onclick = ()=>scan(Object.keys(S));
+  $("clear").onclick = ()=>{ if(confirm("Hapus semua riwayat scan?")){ S={}; selected=null; saveS(); render(); }};
+  render();
+}
+init();
+</script>
+</body>
+</html>
