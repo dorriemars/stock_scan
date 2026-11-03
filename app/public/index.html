@@ -96,12 +96,35 @@ tbody tr.sel{background:var(--neutral-bg);outline:2px solid var(--accent);outlin
 .note b{color:var(--ink)}
 .empty{padding:36px 12px;text-align:center;color:var(--muted)}
 .headrow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+a{color:var(--accent)}
+.warnbar{margin-top:12px;padding:9px 12px;border-radius:8px;background:var(--warn-bg);color:var(--ink);font-size:13px;border:1px solid var(--line)}
+.warnbar b{color:var(--warn)}
+.guide{margin-top:12px}
+.guide h3{font-size:13px;margin:18px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.guide p,.guide li{font-size:13px;line-height:1.55}
+.guide ul{margin:6px 0;padding-left:20px}
+details.method{border-bottom:1px solid var(--line)}
+details.method summary{cursor:pointer;padding:9px 2px;display:flex;align-items:baseline;gap:10px;list-style:none}
+details.method summary::-webkit-details-marker{display:none}
+details.method summary::before{content:"▸";color:var(--muted);width:10px;flex:none}
+details.method[open] summary::before{content:"▾"}
+details.method summary .nm2{font-weight:600}
+details.method summary .grp{font-size:11px;color:var(--muted);background:var(--neutral-bg);padding:1px 7px;border-radius:999px}
+details.method summary .val{margin-left:auto;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+details.method .body{padding:2px 0 12px 20px;display:grid;gap:6px;font-size:13px;line-height:1.55}
+details.method .body .k{color:var(--muted);font-size:12px}
+details.method:target,details.method.flash{background:var(--neutral-bg);border-radius:6px}
+.formula{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12.5px;background:var(--neutral-bg);padding:5px 8px;border-radius:6px;display:inline-block}
+.disclaimer{margin-top:12px;border-color:var(--warn)}
+.disclaimer h2{color:var(--warn)}
+.disclaimer li{font-size:13px;line-height:1.55;margin-bottom:6px}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Scanner Nilai Saham IDX</h1>
   <div class="sub">Ketik kode emiten, lalu data fundamental diambil langsung dari Yahoo Finance dan dihitung nilai wajar serta margin of safety-nya.</div>
+  <div class="warnbar"><b>Penting:</b> alat bantu screening dan edukasi, <b>bukan rekomendasi</b> beli atau jual saham. Data otomatis dari Yahoo Finance bisa terlambat atau keliru. <a href="#disclaimer">Baca disclaimer</a> · <a href="#panduan">Penjelasan metode</a></div>
 
   <div class="panel search">
     <form id="form">
@@ -148,25 +171,110 @@ tbody tr.sel{background:var(--neutral-bg);outline:2px solid var(--accent);outlin
       <b>MoS</b> = (Nilai wajar − Harga) ÷ Nilai wajar. Positif (+) = harga diskon dari nilai wajar; negatif (−) = harga premium.
       <b>Harga beli</b> = Nilai wajar × (1 − target MoS). <span class="tag bv">&lt;BV</span> = harga di bawah nilai buku;
       <span class="tag">ROE↓</span> / <span class="tag">Rugi</span> = waspada value trap.
-      Data Yahoo Finance bisa terlambat atau keliru; cek ulang ke laporan keuangan. Alat bantu screening, bukan rekomendasi investasi.
+      Penjelasan lengkap ada di <a href="#panduan">Penjelasan metode</a> dan <a href="#disclaimer">Disclaimer</a> di bawah.
     </div>
+  </div>
+
+  <div class="panel guide" id="panduan">
+    <h2 style="font-size:16px">Penjelasan metode valuasi</h2>
+    <p class="sub" style="margin:0">Klik nama metode untuk melihat rumus, artinya, kapan cocok dipakai, dan keterbatasannya. Angka di kanan adalah hasil metode itu untuk saham yang sedang dipilih.</p>
+    <h3>11 metode</h3>
+    <div id="method-list"></div>
+
+    <h3>Cara nilai wajar & status dihitung</h3>
+    <ul>
+      <li><b>Nilai wajar</b> = median (atau rata-rata / paling konservatif, sesuai pilihan "Gabungan metode") dari semua metode yang dicentang <i>dan</i> datanya tersedia. Median dipakai sebagai bawaan agar satu metode yang ekstrem tidak menarik hasil terlalu jauh.</li>
+      <li><b>Rentang estimasi</b> = hasil metode terendah sampai tertinggi. Rentang yang lebar berarti metode-metode tidak sepakat, jadi ketidakpastiannya besar.</li>
+      <li><b>Margin of safety (MoS)</b> = (Nilai wajar − Harga) ÷ Nilai wajar. Positif berarti harga diskon dari nilai wajar; negatif berarti harga premium.</li>
+      <li><b>Harga beli</b> = Nilai wajar × (1 − target MoS). Contoh: nilai wajar 1.000 dengan target MoS 30% → harga beli ≤ 700.</li>
+      <li><b>Status:</b> MoS ≥ target → <span class="badge b-buy">Murah (MoS cukup)</span>; 0 sampai target → <span class="badge b-under">Di bawah wajar</span>; −15% sampai 0 → <span class="badge b-fair">Sekitar wajar</span>; di bawah −15% → <span class="badge b-over">Mahal</span>.</li>
+      <li>Jika metode yang bisa dihitung lebih sedikit dari <b>Minimal metode valid</b>, status menjadi <span class="badge b-na">Metode kurang</span> karena nilai wajarnya belum layak dijadikan patokan.</li>
+      <li>Emiten yang sedang <b>rugi</b> tidak pernah dilabeli "Murah", karena nilainya praktis hanya dari aset.</li>
+    </ul>
+
+    <h3>Arti asumsi</h3>
+    <ul>
+      <li><b>Cost of equity (r):</b> return tahunan minimal yang Anda minta dari saham. Bawaan 12% ≈ yield SBN ± 6,5% + premi risiko saham ± 5,5%. Makin tinggi r, makin rendah nilai wajar.</li>
+      <li><b>Pertumbuhan jangka panjang (g):</b> pertumbuhan laba/dividen selamanya, biasanya mendekati pertumbuhan ekonomi nominal (4–6%). Harus lebih kecil dari r.</li>
+      <li><b>Pertumbuhan 5 thn pertama:</b> pertumbuhan lebih tinggi di awal, dipakai DCF dan Graham Formula.</li>
+      <li><b>Yield SBN 10 thn:</b> imbal hasil obligasi negara, pengganti angka 4,4% pada rumus Graham.</li>
+      <li><b>PER wajar & EV/EBITDA wajar:</b> kelipatan yang dianggap normal. Sesuaikan dengan rata-rata sektor emiten.</li>
+      <li><b>Target MoS:</b> seberapa besar diskon yang Anda inginkan sebagai bantalan bila perhitungan meleset. Benjamin Graham menyarankan sekitar 30–50%.</li>
+      <li><b>EPS TTM / Forward:</b> laba 12 bulan terakhir (fakta) atau estimasi analis untuk tahun depan (proyeksi).</li>
+    </ul>
+  </div>
+
+  <div class="panel disclaimer" id="disclaimer">
+    <h2 style="font-size:16px">Disclaimer</h2>
+    <ul>
+      <li><b>Bukan rekomendasi investasi.</b> Scanner ini adalah alat bantu screening dan edukasi, bukan ajakan untuk membeli atau menjual saham apa pun, dan bukan nasihat investasi pribadi. Pembuatnya bukan penasihat investasi berizin OJK.</li>
+      <li><b>Data bisa keliru.</b> Data diambil otomatis dari Yahoo Finance dan bisa terlambat, tidak lengkap, atau salah (misalnya laporan keuangan belum diperbarui atau salah satuan mata uang). Selalu cek ulang dengan laporan keuangan resmi di idx.co.id atau situs emiten.</li>
+      <li><b>Nilai wajar hanyalah estimasi.</b> Angka dihasilkan dari rumus dan asumsi (cost of equity, pertumbuhan, PER wajar, dan lainnya). Asumsi yang berbeda bisa menghasilkan angka yang sangat berbeda. Margin of safety yang besar tidak menjamin harga akan naik.</li>
+      <li><b>Banyak hal tidak dihitung.</b> Kualitas manajemen, tata kelola, prospek industri, aksi korporasi, likuiditas saham, risiko regulasi, dan kejadian luar biasa tidak tercermin dalam angka-angka ini.</li>
+      <li><b>Risiko ditanggung sendiri.</b> Investasi saham mengandung risiko, termasuk kehilangan sebagian atau seluruh modal. Kinerja masa lalu tidak menjamin hasil di masa depan. Setiap keputusan investasi dan risikonya sepenuhnya tanggung jawab pengguna.</li>
+    </ul>
   </div>
 </div>
 
 <script>
 const API = "api/scan";
+// group, formula, what (arti), fit (cocok untuk), limit (keterbatasan) dipakai di bagian "Penjelasan metode".
 const METHODS = [
-  {id:"bv",   ab:"BV",   name:"Nilai buku (BVPS)", desc:"Ekuitas per saham. PBV < 1 berarti harga di bawah nilai buku."},
-  {id:"pbvh", ab:"PBVh", name:"PBV historis", desc:"Rata-rata PBV 4 tahun buku terakhir × BVPS sekarang."},
-  {id:"pbv",  ab:"JPBV", name:"Justified PBV", desc:"BVPS × (ROE − g) ÷ (r − g). Cocok untuk bank & emiten aset berat."},
-  {id:"gn",   ab:"GN",   name:"Graham Number", desc:"√(22,5 × EPS × BVPS): batas atas harga wajar ala Benjamin Graham (PER 15 × PBV 1,5)."},
-  {id:"gf",   ab:"GF",   name:"Graham Formula", desc:"EPS × (8,5 + 2 × pertumbuhan 5 thn) × 4,4 ÷ yield SBN 10 thn."},
-  {id:"per",  ab:"PER",  name:"PER wajar", desc:"EPS × PER wajar."},
-  {id:"perh", ab:"PERh", name:"PER historis", desc:"Rata-rata PER 4 tahun buku terakhir × EPS sekarang."},
-  {id:"epv",  ab:"EPV",  name:"Earnings Power Value", desc:"EPS ÷ r: nilai bila laba tidak tumbuh sama sekali (konservatif)."},
-  {id:"ddm",  ab:"DDM",  name:"Dividend Discount", desc:"DPS × (1 + g) ÷ (r − g). Hanya untuk emiten yang membagi dividen."},
-  {id:"dcf",  ab:"DCF",  name:"DCF arus kas bebas", desc:"Free cash flow per saham tumbuh 5 thn, lalu tumbuh g selamanya, didiskonto r."},
-  {id:"ev",   ab:"EV",   name:"EV/EBITDA wajar", desc:"(EBITDA × EV/EBITDA wajar − utang bersih) ÷ jumlah saham. Tidak berlaku untuk bank."},
+  {id:"bv", ab:"BV", group:"Aset", name:"Nilai buku (BVPS)", desc:"Ekuitas per saham. PBV < 1 berarti harga di bawah nilai buku.",
+   formula:"Total ekuitas ÷ jumlah saham beredar",
+   what:"Nilai aset bersih per saham menurut neraca. Kira-kira inilah bagian tiap saham bila semua aset dijual sesuai nilai bukunya dan seluruh utang dilunasi. Harga di bawah nilai buku (PBV < 1) sering dianggap \"diskon\".",
+   fit:"Bank, properti, dan emiten padat aset; mengecek apakah harga sudah di bawah harga buku.",
+   limit:"Tidak memperhitungkan kemampuan menghasilkan laba. Nilai aset di neraca bisa berbeda jauh dari nilai pasarnya. Emiten aset ringan (konsumer, teknologi) wajar diperdagangkan jauh di atas nilai buku, jadi metode ini membuatnya selalu terlihat mahal."},
+  {id:"pbvh", ab:"PBVh", group:"Aset", name:"PBV historis", desc:"Rata-rata PBV 4 tahun buku terakhir × BVPS sekarang.",
+   formula:"Rata-rata PBV 4 tahun buku terakhir × BVPS sekarang",
+   what:"Harga saham bila pasar menilainya seperti rata-rata beberapa tahun terakhir (pendekatan \"PBV band\"). PBV tiap tahun = harga rata-rata 12 bulan ÷ nilai buku akhir tahun buku.",
+   fit:"Emiten yang bisnisnya stabil, terutama bank dan emiten berbasis aset.",
+   limit:"Kalau pasar dulu terlalu optimistis atau pesimistis, hasilnya ikut bias. Kurang relevan bila bisnis sudah berubah (merger, spin-off, perubahan model bisnis). Hanya 4 titik data."},
+  {id:"pbv", ab:"JPBV", group:"Aset", name:"Justified PBV", desc:"BVPS × (ROE − g) ÷ (r − g). Cocok untuk bank & emiten aset berat.",
+   formula:"BVPS × (ROE − g) ÷ (r − g)",
+   what:"PBV yang pantas ditentukan oleh seberapa besar ROE melebihi return yang diminta investor (r). Jika ROE > r, saham layak dihargai di atas nilai buku; jika ROE < r, layak di bawahnya.",
+   fit:"Bank dan perusahaan dengan ROE stabil dari tahun ke tahun.",
+   limit:"Sangat sensitif terhadap asumsi r dan g. ROE satu tahun bisa tidak mewakili (laba sekali waktu, siklus komoditas)."},
+  {id:"gn", ab:"GN", group:"Laba", name:"Graham Number", desc:"√(22,5 × EPS × BVPS): batas atas harga wajar ala Benjamin Graham (PER 15 × PBV 1,5).",
+   formula:"√(22,5 × EPS × BVPS)",
+   what:"Batas atas harga untuk investor defensif menurut Benjamin Graham: PER tidak lebih dari 15 dan PBV tidak lebih dari 1,5 (15 × 1,5 = 22,5). Menggabungkan laba dan nilai buku dalam satu angka.",
+   fit:"Saham dengan laba stabil; gaya value investing konservatif.",
+   limit:"Mengabaikan pertumbuhan, sehingga terlalu ketat untuk emiten ROE tinggi. Tidak bisa dihitung untuk emiten yang rugi atau ekuitasnya negatif."},
+  {id:"gf", ab:"GF", group:"Laba", name:"Graham Formula", desc:"EPS × (8,5 + 2 × pertumbuhan 5 thn) × 4,4 ÷ yield SBN 10 thn.",
+   formula:"EPS × (8,5 + 2 × pertumbuhan 5 thn) × 4,4 ÷ yield SBN 10 thn",
+   what:"Rumus revisi Graham: PER 8,5 untuk perusahaan tanpa pertumbuhan, ditambah 2 × tingkat pertumbuhan (dalam %), lalu disesuaikan dengan imbal hasil obligasi (4,4% pada zaman Graham dibanding yield SBN sekarang).",
+   fit:"Perusahaan yang labanya tumbuh cukup stabil.",
+   limit:"Hasil cenderung tinggi bila asumsi pertumbuhan besar; angka pertumbuhan 5 tahun sangat menentukan. Tidak untuk emiten rugi."},
+  {id:"per", ab:"PER", group:"Laba", name:"PER wajar", desc:"EPS × PER wajar.",
+   formula:"EPS × PER wajar",
+   what:"Harga bila pasar membayar kelipatan laba yang dianggap normal. PER wajar bisa disesuaikan dengan rata-rata sektor atau pasar.",
+   fit:"Perusahaan dengan laba stabil; cepat untuk perbandingan antar-emiten satu sektor.",
+   limit:"Angka PER wajar bersifat subjektif dan berbeda antar-sektor. Laba satu tahun bisa melonjak atau anjlok karena faktor sekali waktu."},
+  {id:"perh", ab:"PERh", group:"Laba", name:"PER historis", desc:"Rata-rata PER 4 tahun buku terakhir × EPS sekarang.",
+   formula:"Rata-rata PER 4 tahun buku terakhir × EPS sekarang",
+   what:"Harga bila pasar menilai laba saham ini seperti rata-rata beberapa tahun terakhir. PER tiap tahun = harga rata-rata 12 bulan ÷ EPS tahun buku tersebut.",
+   fit:"Emiten dengan laba yang tumbuh stabil (konsumer, telko, bank).",
+   limit:"Menyesatkan untuk emiten siklikal (batu bara, nikel): saat laba puncak PER rendah, saat laba anjlok PER tinggi. Tahun rugi tidak dihitung. Hanya 4 titik data."},
+  {id:"epv", ab:"EPV", group:"Laba", name:"Earnings Power Value", desc:"EPS ÷ r: nilai bila laba tidak tumbuh sama sekali (konservatif).",
+   formula:"EPS ÷ r",
+   what:"Nilai perusahaan jika laba sekarang bertahan selamanya tanpa tumbuh (konsep Bruce Greenwald). Selisih harga dengan EPV menunjukkan berapa banyak pertumbuhan yang sudah \"dihargai\" pasar.",
+   fit:"Patokan konservatif untuk semua emiten yang labanya positif.",
+   limit:"Mengabaikan pertumbuhan, jadi cenderung rendah untuk emiten bertumbuh. Memakai laba akuntansi apa adanya, bukan laba rata-rata yang dinormalkan."},
+  {id:"ddm", ab:"DDM", group:"Dividen", name:"Dividend Discount", desc:"DPS × (1 + g) ÷ (r − g). Hanya untuk emiten yang membagi dividen.",
+   formula:"DPS × (1 + g) ÷ (r − g)",
+   what:"Model Gordon Growth: nilai saham sama dengan nilai sekarang dari semua dividen di masa depan yang tumbuh g per tahun dan didiskonto dengan r. DPS = total dividen 12 bulan terakhir.",
+   fit:"Emiten dengan dividen rutin dan stabil (bank, telko, konsumer, BUMN).",
+   limit:"Tidak bisa untuk emiten tanpa dividen. Dividen spesial atau interim besar membuat hasil terlalu tinggi. Sangat sensitif bila r dan g berdekatan."},
+  {id:"dcf", ab:"DCF", group:"Arus kas", name:"DCF arus kas bebas", desc:"Free cash flow per saham tumbuh 5 thn, lalu tumbuh g selamanya, didiskonto r.",
+   formula:"Σ FCF₁…₅ ÷ (1 + r)ᵗ + nilai terminal (FCF₅ × (1 + g) ÷ (r − g)) ÷ (1 + r)⁵",
+   what:"Nilai sekarang dari kas yang benar-benar tersisa untuk pemegang saham (free cash flow). FCF per saham tumbuh sesuai \"pertumbuhan 5 thn pertama\", setelah itu tumbuh g selamanya, semuanya didiskonto dengan r.",
+   fit:"Perusahaan non-keuangan dengan arus kas positif dan stabil.",
+   limit:"Tidak berlaku untuk bank. FCF satu tahun bisa sangat rendah saat ekspansi (capex besar) sehingga hasilnya terlalu kecil. Nilai terminal biasanya mendominasi hasil, jadi asumsi g sangat berpengaruh."},
+  {id:"ev", ab:"EV", group:"Arus kas", name:"EV/EBITDA wajar", desc:"(EBITDA × EV/EBITDA wajar − utang bersih) ÷ jumlah saham. Tidak berlaku untuk bank.",
+   formula:"(EBITDA × EV/EBITDA wajar − utang bersih) ÷ jumlah saham",
+   what:"Menilai seluruh perusahaan (ekuitas + utang) dari laba operasi sebelum bunga, pajak, dan penyusutan, lalu dikurangi utang bersih (utang − kas) untuk mendapat nilai bagian pemegang saham.",
+   fit:"Perusahaan padat modal atau berutang (tambang, telko, infrastruktur); membandingkan emiten dengan struktur utang berbeda.",
+   limit:"Tidak berlaku untuk bank. EBITDA mengabaikan belanja modal dan pajak. Kelipatan wajar bersifat subjektif dan berbeda antar-sektor."},
 ];
 const DEFAULTS = {r:12, g:5, gh:8, y:6.5, pe:12, evm:7, mos:30, minN:5, eps:"ttm", agg:"median",
   on:Object.fromEntries(METHODS.map(m=>[m.id,true]))};
@@ -335,8 +443,38 @@ function render(){
   renderDetail();
 }
 
+// Daftar penjelasan dibuat sekali agar metode yang sedang dibuka tidak tertutup saat render ulang.
+function buildGuide(){
+  $("method-list").innerHTML = METHODS.map(m=>`<details class="method" id="m-${m.id}">
+    <summary><span class="nm2">${esc(m.name)}</span><span class="grp">${m.group}</span><span class="val" data-val="${m.id}"></span></summary>
+    <div class="body">
+      <div><span class="formula">${esc(m.formula)}</span></div>
+      <div><div class="k">Arti</div>${esc(m.what)}</div>
+      <div><div class="k">Cocok untuk</div>${esc(m.fit)}</div>
+      <div><div class="k">Keterbatasan</div>${esc(m.limit)}</div>
+    </div>
+  </details>`).join("");
+}
+
+function updateGuide(s){
+  METHODS.forEach(m=>{
+    const el = document.querySelector(`[data-val="${m.id}"]`);
+    const v = s?.vals[m.id];
+    el.textContent = !s ? "" : v==null ? `${s.code}: tidak bisa dihitung` : `${s.code}: ${fmtN(v)}${A.on[m.id]?"":" (tidak dipakai)"}`;
+  });
+}
+
+function openMethod(id){
+  const d = $("m-"+id);
+  if(!d) return;
+  d.open = true;
+  d.classList.add("flash");
+  setTimeout(()=>d.classList.remove("flash"), 1500);
+}
+
 function renderDetail(){
   const s = rows.find(x=>x.code===selected);
+  updateGuide(s);
   if(!s){ $("detail").innerHTML = `<div class="empty">Ketik kode emiten di atas lalu tekan <b>Scan</b>.<br>Hasil valuasinya akan muncul di sini.</div>`; return; }
   let verdict = "Data belum cukup untuk menghitung nilai wajar.", vcls = "";
   if(s.mos!=null){
@@ -378,7 +516,7 @@ function renderDetail(){
         <h2 style="margin-top:10px">Per metode (${s.n} dari ${METHODS.length} bisa dihitung)</h2>
         ${METHODS.map(m=>{
           const v = s.vals[m.id], mm = v ? (v-s.price)/v : null;
-          return `<div class="row" title="${m.desc}" style="${A.on[m.id]?"":"opacity:.45"}"><span>${m.name}</span><span>${fmtN(v)} <span class="${mm>0?"pos":mm<0?"neg":"mut"}" style="display:inline-block;min-width:56px;text-align:right">${fmtP(mm,0,true)}</span></span></div>`;
+          return `<div class="row" title="${m.desc}" style="${A.on[m.id]?"":"opacity:.45"}"><a href="#m-${m.id}" data-open="${m.id}">${m.name}</a><span>${fmtN(v)} <span class="${mm>0?"pos":mm<0?"neg":"mut"}" style="display:inline-block;min-width:56px;text-align:right">${fmtP(mm,0,true)}</span></span></div>`;
         }).join("")}
       </div>
       <div>
@@ -411,6 +549,9 @@ function init(){
     $("queue").innerHTML = `<div class="err">Halaman ini perlu server scan. Buka lewat <b>jalankan.bat</b> (alamat http://localhost:8765), bukan dengan klik dua kali file HTML.</div>`;
   }
   syncInputs();
+  buildGuide();
+  document.addEventListener("click", e=>{ const id = e.target.closest("[data-open]")?.dataset.open; if(id) openMethod(id); });
+  if(location.hash.startsWith("#m-")) openMethod(location.hash.slice(3));
   $("form").onsubmit = e => { e.preventDefault(); const c = parseCodes($("code").value); $("code").value = ""; scan(c); };
   document.querySelector(".chips").onclick = e => { const c = e.target.dataset.c; if(c) scan(parseCodes(c)); };
   $("queue").onclick = e => { const c = e.target.dataset.x; if(c){ delete Q[c]; renderQueue(); }};
