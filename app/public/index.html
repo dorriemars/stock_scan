@@ -6,10 +6,12 @@
 <title>Scanner Nilai Saham</title>
 <style>
 :root{
+  color-scheme:light dark;
   --bg:#f6f7f9; --panel:#ffffff; --ink:#15181d; --muted:#5f6773; --line:#e3e6ea;
-  --accent:#2457d6; --accent-ink:#ffffff; --good:#13804a; --good-bg:#e3f4ea; --warn:#a86400; --warn-bg:#fdf1dc;
+  --accent:#2457d6; --accent-ink:#ffffff; --good:#0e6b3c; --good-bg:#e3f4ea; --warn:#8a5200; --warn-bg:#fdf1dc;
   --bad:#c0362c; --bad-bg:#fbe6e4; --neutral-bg:#eef0f3; --bar:#d7dbe1;
 }
+:root[data-theme="light"]{color-scheme:light}
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#0f1115; --panel:#171a20; --ink:#e8eaee; --muted:#9aa2ae; --line:#272c35;
@@ -18,18 +20,29 @@
   }
 }
 :root[data-theme="dark"]{
+  color-scheme:dark;
   --bg:#0f1115; --panel:#171a20; --ink:#e8eaee; --muted:#9aa2ae; --line:#272c35;
   --accent:#7ea2ff; --accent-ink:#0f1115; --good:#4cc68a; --good-bg:#14301f; --warn:#f0b14a; --warn-bg:#33270f;
   --bad:#ff7b70; --bad-bg:#3a1a18; --neutral-bg:#222731; --bar:#323946;
 }
 *{box-sizing:border-box}
+[hidden]{display:none !important}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 .wrap{max-width:1300px;margin:0 auto;padding:20px 16px 48px}
 h1{font-size:22px;margin:0}
 h2{font-size:14px;margin:0 0 10px}
 .sub{color:var(--muted);font-size:13px}
+.small{font-size:12px}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
-.search{margin:16px 0 12px;padding:18px 16px}
+.tabs{position:relative;display:flex;gap:2px;margin-top:14px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs a{padding:9px 14px;border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0;margin-bottom:-1px;color:var(--muted);text-decoration:none;font-weight:600;white-space:nowrap}
+.tabs a:hover{color:var(--ink)}
+.tabs a[aria-current="page"]{color:var(--ink);background:var(--panel);border-color:var(--line)}
+/* Layar sempit: "Top 20" disembunyikan dari tab (judul panel tetap menyebutnya) agar keempat tab muat. */
+@media(max-width:480px){.tabs .tl{display:none} .tabs a{padding:9px 12px}}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.search{margin:12px 0;padding:18px 16px}
 .search form{display:flex;gap:8px}
 .search input{flex:1;min-width:0;font-size:18px;padding:10px 12px;text-transform:uppercase;letter-spacing:.5px}
 .search button[type=submit]{font-size:16px;padding:10px 22px;background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
@@ -37,41 +50,73 @@ h2{font-size:14px;margin:0 0 10px}
 .chip{padding:3px 10px;border-radius:999px;font-size:12px}
 .queue{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .queue div{display:flex;align-items:center;gap:8px;font-size:13px}
-.queue .err{color:var(--bad)}
+.err{color:var(--bad);font-size:13px}
 .queue button{padding:0 6px;font-size:12px}
-.spin{width:14px;height:14px;border:2px solid var(--bar);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite;flex:none}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--bar);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite;flex:none;vertical-align:-2px}
 @keyframes sp{to{transform:rotate(360deg)}}
+.cards{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px}
+@media(min-width:760px){.cards{grid-template-columns:repeat(3,1fr)}}
+.card{display:flex;flex-direction:column;gap:6px;color:var(--ink);text-decoration:none}
+.card:hover{border-color:var(--accent)}
+.card h3{margin:0;font-size:15px}
+.card ol{margin:2px 0 0;padding-left:20px;font-size:13px;font-variant-numeric:tabular-nums}
+.card .go{margin-top:auto;color:var(--accent);font-weight:600;font-size:13px}
 .grid2{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px}
 @media(min-width:900px){.grid2{grid-template-columns:3fr 2fr}}
 .assume{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 14px}
 label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
 input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
 input[type=number]{width:100%}
+/* iOS Safari memperbesar halaman bila kolom isian < 16px mendapat fokus. */
+@media(max-width:600px){input,select,textarea{font-size:16px}}
 .methods{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px}
 .methods label{flex-direction:row;align-items:center;color:var(--ink);font-size:13px}
 button{font:inherit;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer}
 button:hover{border-color:var(--accent)}
-button:disabled{opacity:.6;cursor:default}
+button:disabled,button[aria-disabled="true"]{opacity:.6;cursor:default}
+.linkbtn{background:none;border:none;padding:0;color:var(--accent);cursor:pointer}
 .tablewrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 th,td{padding:7px 8px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
-th{font-size:12px;color:var(--muted);font-weight:600;cursor:pointer;user-select:none;background:var(--panel)}
+th{font-size:12px;color:var(--muted);font-weight:600;user-select:none;background:var(--panel)}
+th[data-k]{cursor:pointer}
 th:hover{color:var(--ink)}
 th.l,td.l{text-align:left}
+.thbtn{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;white-space:nowrap}
 tbody tr{cursor:pointer}
 tbody tr:hover{background:var(--neutral-bg)}
 tbody tr.sel{background:var(--neutral-bg);outline:2px solid var(--accent);outline-offset:-2px}
-.code{font-weight:650}
+/* Kolom pertama (# / hapus) dan Saham tetap terlihat saat tabel digeser ke samping. */
+.stick,.stick2{position:sticky;z-index:1;background:var(--panel)}
+/* left:-1px menutup celah subpiksel di tepi kiri agar isi yang tergeser tidak mengintip di sebelah kolom sticky. */
+.stick{left:-1px;width:40px;min-width:40px;max-width:40px}
+.stick2{left:39px;box-shadow:1px 0 0 var(--line)}
+th.stick,th.stick2{z-index:2}
+tbody tr:hover .stick,tbody tr:hover .stick2,tbody tr.sel .stick,tbody tr.sel .stick2{background:var(--neutral-bg)}
+/* Garis tepi baris terpilih digambar ulang di sel sticky (outline baris tertutup latar sel sticky). */
+tbody tr.sel .stick{box-shadow:inset 3px 0 0 var(--accent),inset 0 2px 0 var(--accent),inset 0 -2px 0 var(--accent)}
+tbody tr.sel .stick2{box-shadow:inset 0 2px 0 var(--accent),inset 0 -2px 0 var(--accent),1px 0 0 var(--line)}
+td.rank{color:var(--muted);font-weight:600;text-align:center}
+.code{font-weight:650;font-size:inherit;background:none;border:0;padding:0;color:var(--ink);cursor:pointer;text-align:left}
+.code:focus-visible,.thbtn:focus-visible,.del:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.del{padding:0 7px}
 .nm{color:var(--muted);font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:600px){.nm{max-width:140px}}
 .pos{color:var(--good)} .neg{color:var(--bad)} .mut{color:var(--muted)}
 .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600}
-.b-buy{background:var(--good-bg);color:var(--good)}
-.b-under{background:var(--good-bg);color:var(--good);opacity:.8}
+.b-buy{background:var(--good);color:var(--panel)}
+.b-under{background:var(--good-bg);color:var(--good)}
 .b-fair{background:var(--neutral-bg);color:var(--muted)}
 .b-over{background:var(--bad-bg);color:var(--bad)}
 .b-na{background:var(--neutral-bg);color:var(--muted)}
 .tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:4px;margin-left:4px;background:var(--warn-bg);color:var(--warn)}
 .tag.bv{background:var(--good-bg);color:var(--good)}
+.tag.idx{background:var(--neutral-bg);color:var(--muted);margin-left:0;margin-right:4px}
+.lk{display:inline-block;font-size:11.5px;padding:1px 7px;border-radius:999px;font-weight:600;white-space:nowrap}
+.lk-ok{background:var(--good-bg);color:var(--good)}
+.lk-late{background:var(--warn-bg);color:var(--warn)}
+.lk-old{background:var(--bad-bg);color:var(--bad)}
+.lk-na{background:var(--neutral-bg);color:var(--muted)}
 .mos{display:flex;align-items:center;gap:6px;justify-content:flex-end}
 .mosbar{width:70px;height:8px;background:var(--bar);border-radius:4px;position:relative;overflow:hidden}
 .mosbar i{position:absolute;top:0;bottom:0}
@@ -84,6 +129,7 @@ tbody tr.sel{background:var(--neutral-bg);outline:2px solid var(--accent);outlin
 .cols{display:grid;grid-template-columns:1fr;gap:4px 24px;margin-top:12px}
 @media(min-width:600px){.cols{grid-template-columns:1fr 1fr}}
 .row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);gap:8px}
+.row.off,.row.off a{color:var(--muted)}
 .strip{position:relative;height:56px;margin:44px 14px 8px}
 .strip .axis{position:absolute;left:0;right:0;top:26px;height:4px;background:var(--bar);border-radius:2px}
 .strip .range{position:absolute;top:22px;height:12px;background:var(--good-bg);border:1px solid var(--good);border-radius:6px}
@@ -95,7 +141,18 @@ tbody tr.sel{background:var(--neutral-bg);outline:2px solid var(--accent);outlin
 .note{font-size:12px;color:var(--muted);margin-top:14px}
 .note b{color:var(--ink)}
 .empty{padding:36px 12px;text-align:center;color:var(--muted)}
+#detail:focus{outline:none}
 .headrow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.listhead{margin:12px 0}
+.listhead h2{font-size:17px;margin:0 0 4px}
+.listctl{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin-top:12px}
+.listctl label{flex-direction:row;align-items:center;gap:6px;color:var(--ink);font-size:13px}
+.prog{margin-top:12px;font-size:13px}
+.progress{height:6px;background:var(--bar);border-radius:3px;overflow:hidden;margin-top:6px}
+.progress i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.stats{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:10px;font-size:12.5px;color:var(--muted)}
+.stats b{color:var(--ink)}
+.more{margin-top:10px;text-align:center}
 a{color:var(--accent)}
 .warnbar{margin-top:12px;padding:9px 12px;border-radius:8px;background:var(--warn-bg);color:var(--ink);font-size:13px;border:1px solid var(--line)}
 .warnbar b{color:var(--warn)}
@@ -123,24 +180,84 @@ details.method:target,details.method.flash{background:var(--neutral-bg);border-r
 <body>
 <div class="wrap">
   <h1>Scanner Nilai Saham IDX</h1>
-  <div class="sub">Ketik kode emiten, lalu data fundamental diambil langsung dari Yahoo Finance dan dihitung nilai wajar serta margin of safety-nya.</div>
+  <div class="sub">Data fundamental diambil langsung dari Yahoo Finance, lalu dihitung nilai wajar, margin of safety, dan status laporan keuangannya.</div>
+
+  <nav class="tabs" aria-label="Menu">
+    <a href="#home" data-view="home">Home</a>
+    <a href="#lq45" data-view="lq45"><span class="tl">Top 20 </span>LQ45</a>
+    <a href="#syariah" data-view="syariah"><span class="tl">Top 20 </span>Syariah</a>
+    <a href="#mos" data-view="mos"><span class="tl">Top 20 </span>MoS</a>
+  </nav>
+
   <div class="warnbar"><b>Penting:</b> alat bantu screening dan edukasi, <b>bukan rekomendasi</b> beli atau jual saham. Data otomatis dari Yahoo Finance bisa terlambat atau keliru. <a href="#disclaimer">Baca disclaimer</a> · <a href="#panduan">Penjelasan metode</a></div>
 
-  <div class="panel search">
-    <form id="form">
-      <input id="code" placeholder="Kode emiten, mis. BBRI atau BBRI, TLKM, ASII" autocomplete="off" autofocus>
-      <button type="submit" id="go">Scan</button>
-    </form>
-    <div class="chips">Coba:
-      <button class="chip" data-c="BBRI">BBRI</button><button class="chip" data-c="TLKM">TLKM</button>
-      <button class="chip" data-c="ASII">ASII</button><button class="chip" data-c="ADRO">ADRO</button>
-      <button class="chip" data-c="UNVR">UNVR</button><button class="chip" data-c="BBCA, BMRI, BBNI">Bank besar</button>
+  <!-- ===== Home ===== -->
+  <div data-panel="home">
+    <div class="panel search">
+      <form id="form">
+        <input id="code" placeholder="Kode emiten, mis. BBRI atau BBRI, TLKM, ASII" autocomplete="off" autofocus>
+        <button type="submit" id="go">Scan</button>
+      </form>
+      <div class="chips">Coba:
+        <button class="chip" data-c="BBRI">BBRI</button><button class="chip" data-c="TLKM">TLKM</button>
+        <button class="chip" data-c="ASII">ASII</button><button class="chip" data-c="ADRO">ADRO</button>
+        <button class="chip" data-c="UNVR">UNVR</button><button class="chip" data-c="BBCA, BMRI, BBNI">Bank besar</button>
+      </div>
+      <div class="queue" id="queue"></div>
+      <div class="sr" id="home-live" role="status" aria-live="polite"></div>
     </div>
-    <div class="queue" id="queue"></div>
+    <div class="cards" id="cards"></div>
+    <div id="slot-home"></div>
+    <div class="panel">
+      <div class="headrow">
+        <h2 style="margin:0">Riwayat scan</h2>
+        <div style="display:flex;gap:8px"><button id="rescan">Scan ulang semua</button><button id="clear">Hapus riwayat</button></div>
+      </div>
+      <div class="tablewrap" id="hist-wrap">
+        <table><thead><tr id="hist-head"></tr></thead><tbody id="hist-body"></tbody></table>
+      </div>
+      <div class="empty" id="hist-empty" hidden>Belum ada saham yang discan.</div>
+      <div class="note">
+        <b>MoS</b> = (Nilai wajar − Harga) ÷ Nilai wajar. Positif (+) = harga diskon dari nilai wajar; negatif (−) = harga premium
+        (ditulis &lt; −100% bila harga lebih dari dua kali nilai wajar).
+        <b>Harga beli</b> = Nilai wajar × (1 − target MoS). <span class="tag bv">&lt;BV</span> = harga di bawah nilai buku;
+        <span class="tag">ROE↓</span> / <span class="tag">Rugi</span> = waspada value trap.
+        <b>Lap. keuangan</b> = periode laporan keuangan terakhir di data Yahoo (<span class="lk lk-ok">✓ Sudah update</span> = sudah memakai laporan terbaru).
+        Penjelasan lengkap ada di <a href="#panduan">Penjelasan metode</a> dan <a href="#disclaimer">Disclaimer</a> di bawah.
+      </div>
+    </div>
   </div>
 
-  <div class="grid2">
-    <div class="panel" id="detail"></div>
+  <!-- ===== Menu Top 20 (dipakai bergantian oleh LQ45, Syariah, MoS) ===== -->
+  <div data-panel="list" hidden>
+    <div class="panel listhead" id="list-panel" tabindex="-1">
+      <h2 id="list-title"></h2>
+      <div class="sub" id="list-desc"></div>
+      <div class="listctl">
+        <label id="list-rank-wrap">Peringkat berdasarkan
+          <select id="list-rank"><option value="mcap">Kapitalisasi pasar terbesar</option><option value="mos">MoS terbesar</option></select>
+        </label>
+        <label id="list-incl-wrap" title="Emiten rugi, status Metode kurang, atau tanpa nilai wajar"><input type="checkbox" id="list-incl"> Sertakan emiten rugi &amp; metode kurang</label>
+        <label title="Hanya saham yang datanya sudah memakai laporan keuangan terbaru"><input type="checkbox" id="list-fresh"> Hanya laporan keuangan terbaru</label>
+        <button id="list-refresh">Perbarui data</button>
+      </div>
+      <div class="prog" id="list-prog"></div>
+      <div class="sr" id="list-live" role="status" aria-live="polite"></div>
+    </div>
+    <div class="panel" style="margin-bottom:12px">
+      <div class="tablewrap" id="list-wrap">
+        <table><thead><tr id="list-head"></tr></thead><tbody id="list-body"></tbody></table>
+      </div>
+      <div class="empty" id="list-empty" hidden></div>
+      <div class="more"><button id="list-more" hidden></button></div>
+      <div class="note" id="list-note">Klik baris untuk melihat rincian valuasi di bawah tabel. <b>#</b> = peringkat menurut kriteria yang dipilih; klik judul kolom untuk mengurutkan ulang tampilan.</div>
+    </div>
+    <div id="slot-list"></div>
+  </div>
+
+  <!-- Rincian + asumsi: satu elemen yang dipindah ke slot menu aktif -->
+  <div class="grid2" id="shared">
+    <div class="panel" id="detail" tabindex="-1"></div>
     <div class="panel">
       <div class="headrow"><h2 style="margin:0">Asumsi valuasi</h2><button id="reset">Reset</button></div>
       <div class="assume">
@@ -156,22 +273,6 @@ details.method:target,details.method.flash{background:var(--neutral-bg);border-r
         <label>Gabungan metode<select id="a-agg"><option value="median">Median</option><option value="mean">Rata-rata</option><option value="min">Paling konservatif</option></select></label>
       </div>
       <div class="methods" id="methods"></div>
-    </div>
-  </div>
-
-  <div class="panel">
-    <div class="headrow">
-      <h2 style="margin:0">Riwayat scan</h2>
-      <div style="display:flex;gap:8px"><button id="rescan">Scan ulang semua</button><button id="clear">Hapus riwayat</button></div>
-    </div>
-    <div class="tablewrap">
-      <table><thead><tr id="thead"></tr></thead><tbody id="tbody"></tbody></table>
-    </div>
-    <div class="note">
-      <b>MoS</b> = (Nilai wajar − Harga) ÷ Nilai wajar. Positif (+) = harga diskon dari nilai wajar; negatif (−) = harga premium.
-      <b>Harga beli</b> = Nilai wajar × (1 − target MoS). <span class="tag bv">&lt;BV</span> = harga di bawah nilai buku;
-      <span class="tag">ROE↓</span> / <span class="tag">Rugi</span> = waspada value trap.
-      Penjelasan lengkap ada di <a href="#panduan">Penjelasan metode</a> dan <a href="#disclaimer">Disclaimer</a> di bawah.
     </div>
   </div>
 
@@ -192,12 +293,18 @@ details.method:target,details.method.flash{background:var(--neutral-bg);border-r
       <li>Emiten yang sedang <b>rugi</b> tidak pernah dilabeli "Murah", karena nilainya praktis hanya dari aset.</li>
     </ul>
 
+    <h3>Menu Top 20</h3>
+    <ul id="guide-menus"></ul>
+
+    <h3>Status laporan keuangan</h3>
+    <ul id="guide-lk"></ul>
+
     <h3>Arti asumsi</h3>
     <ul>
       <li><b>Cost of equity (r):</b> return tahunan minimal yang Anda minta dari saham. Bawaan 12% ≈ yield SBN ± 6,5% + premi risiko saham ± 5,5%. Makin tinggi r, makin rendah nilai wajar.</li>
       <li><b>Pertumbuhan jangka panjang (g):</b> pertumbuhan laba/dividen selamanya, biasanya mendekati pertumbuhan ekonomi nominal (4–6%). Harus lebih kecil dari r.</li>
       <li><b>Pertumbuhan 5 thn pertama:</b> pertumbuhan lebih tinggi di awal, dipakai DCF dan Graham Formula.</li>
-      <li><b>Yield SBN 10 thn:</b> imbal hasil obligasi negara, pengganti angka 4,4% pada rumus Graham.</li>
+      <li><b>Yield SBN 10 thn:</b> imbal hasil obligasi negara, dipakai sebagai Y (yield obligasi AAA saat ini) pada rumus Graham; angka 4,4% (yield obligasi AAA tahun 1962) tetap dipakai. Yield SBN biasanya lebih rendah daripada obligasi korporasi AAA, sehingga hasil Graham Formula cenderung lebih tinggi.</li>
       <li><b>PER wajar & EV/EBITDA wajar:</b> kelipatan yang dianggap normal. Sesuaikan dengan rata-rata sektor emiten.</li>
       <li><b>Target MoS:</b> seberapa besar diskon yang Anda inginkan sebagai bantalan bila perhitungan meleset. Benjamin Graham menyarankan sekitar 30–50%.</li>
       <li><b>EPS TTM / Forward:</b> laba 12 bulan terakhir (fakta) atau estimasi analis untuk tahun depan (proyeksi).</li>
@@ -210,6 +317,7 @@ details.method:target,details.method.flash{background:var(--neutral-bg);border-r
       <li><b>Bukan rekomendasi investasi.</b> Scanner ini adalah alat bantu screening dan edukasi, bukan ajakan untuk membeli atau menjual saham apa pun, dan bukan nasihat investasi pribadi. Pembuatnya bukan penasihat investasi berizin OJK.</li>
       <li><b>Data bisa keliru.</b> Data diambil otomatis dari Yahoo Finance dan bisa terlambat, tidak lengkap, atau salah (misalnya laporan keuangan belum diperbarui atau salah satuan mata uang). Selalu cek ulang dengan laporan keuangan resmi di idx.co.id atau situs emiten.</li>
       <li><b>Nilai wajar hanyalah estimasi.</b> Angka dihasilkan dari rumus dan asumsi (cost of equity, pertumbuhan, PER wajar, dan lainnya). Asumsi yang berbeda bisa menghasilkan angka yang sangat berbeda. Margin of safety yang besar tidak menjamin harga akan naik.</li>
+      <li><b>Daftar indeks & peringkat.</b> Daftar konstituen LQ45 dan JII disalin manual dari pengumuman Bursa Efek Indonesia dan bisa berubah setiap periode. Peringkat Top 20 hanyalah hasil pengurutan angka, bukan daftar saham pilihan atau rekomendasi.</li>
       <li><b>Banyak hal tidak dihitung.</b> Kualitas manajemen, tata kelola, prospek industri, aksi korporasi, likuiditas saham, risiko regulasi, dan kejadian luar biasa tidak tercermin dalam angka-angka ini.</li>
       <li><b>Risiko ditanggung sendiri.</b> Investasi saham mengandung risiko, termasuk kehilangan sebagian atau seluruh modal. Kinerja masa lalu tidak menjamin hasil di masa depan. Setiap keputusan investasi dan risikonya sepenuhnya tanggung jawab pengguna.</li>
     </ul>
@@ -218,6 +326,38 @@ details.method:target,details.method.flash{background:var(--neutral-bg);border-r
 
 <script>
 const API = "api/scan";
+
+// ===== Daftar konstituen indeks =====
+// Perbarui setiap pergantian periode (halaman menampilkan peringatan setelah tanggal `until` lewat):
+// - LQ45: dievaluasi BEI tiap 3 bulan, berlaku awal Februari, Mei, Agustus, dan November.
+// - JII: evaluasi mayor tiap 6 bulan mengikuti Daftar Efek Syariah OJK, berlaku awal Juni dan Desember.
+const INDEXES = {
+  lq45: {name:"LQ45", period:"2 Nov 2026 – 29 Jan 2027", until:"2027-01-29",
+    source:"Pengumuman BEI Peng-00204 & Peng-00205/BEI.POP/10-2026",
+    url:"https://pusatdata.kontan.co.id/news/ini-daftar-lengkap-saham-baru-lq45-untuk-periode-2-november-2026-29-januari-2027",
+    codes:["AADI","ADMR","ADRO","AKRA","AMMN","AMRT","ANTM","ASII","BBCA","BBNI","BBRI","BBTN","BMRI","BRPT","BUMI",
+           "CPIN","DEWA","ELSA","EMTK","ESSA","EXCL","GOTO","HRTA","ICBP","INCO","INDF","INDY","INKP","ISAT","ITMG",
+           "JPFA","KLBF","MAPI","MBMA","MDKA","MEDC","NCKL","PGAS","PGEO","PTBA","SMGR","TLKM","UNTR","UNVR","WIFI"]},
+  jii:  {name:"Jakarta Islamic Index (JII)", period:"2 Jun – 30 Nov 2026", until:"2026-11-30",
+    source:"Pengumuman BEI Peng-00089/BEI.POP/05-2026",
+    url:"https://stockwatch.id/?p=68316",
+    codes:["AADI","ADMR","ADRO","ANTM","ARCI","BKSL","BRIS","BRMS","BUMI","CPIN","DEWA","ENRG","EXCL","ICBP","INDF",
+           "INKP","JPFA","KLBF","MBMA","MDKA","MEDC","PGAS","PTBA","RAJA","RATU","TLKM","TPIA","UNTR","UNVR","WIFI"]},
+};
+const indexExpired = idx => new Date() > new Date(INDEXES[idx].until+"T23:59:59+07:00");
+const isIndexCode = c => INDEXES.lq45.codes.includes(c) || INDEXES.jii.codes.includes(c);
+
+const LISTS = {
+  lq45:    {title:"Top 20 LQ45", index:"lq45", ranks:["mcap","mos"]},
+  syariah: {title:"Top 20 Syariah", index:"jii", ranks:["mcap","mos"]},
+  mos:     {title:"Top 20 MoS", index:null, ranks:["mos"]},
+};
+const TOP_N = 20;
+const STALE_MS = 3*60*60*1000;   // data menu yang lebih tua dari ini dipindai ulang otomatis
+const PARTIAL_STALE_MS = 10*60*1000;   // data yang sebagian gagal diambil dipindai ulang lebih cepat
+const MAX_PARALLEL = 4;          // permintaan scan bersamaan (ramah rate limit Yahoo)
+const MAX_CODES = 30;            // kode per sekali ketik di Home
+
 // group, formula, what (arti), fit (cocok untuk), limit (keterbatasan) dipakai di bagian "Penjelasan metode".
 const METHODS = [
   {id:"bv", ab:"BV", group:"Aset", name:"Nilai buku (BVPS)", desc:"Ekuitas per saham. PBV < 1 berarti harga di bawah nilai buku.",
@@ -278,60 +418,294 @@ const METHODS = [
 ];
 const DEFAULTS = {r:12, g:5, gh:8, y:6.5, pe:12, evm:7, mos:30, minN:5, eps:"ttm", agg:"median",
   on:Object.fromEntries(METHODS.map(m=>[m.id,true]))};
-const LS_A = "idx-scanner-asumsi-v1", LS_S = "idx-scanner-riwayat-v1";
+const PREF_DEFAULTS = {
+  lq45:    {rank:"mcap", all:false, incl:false, fresh:false},
+  syariah: {rank:"mcap", all:false, incl:false, fresh:false},
+  mos:     {rank:"mos",  all:false, incl:false, fresh:false},
+};
+const LS = {asumsi:"idx-scanner-asumsi-v1", data:"idx-scanner-data-v1", hist:"idx-scanner-riwayat-v2",
+  pref:"idx-scanner-menu-v1", oldHist:"idx-scanner-riwayat-v1", view:"idx-scanner-view"};
+const SECTORS = {"Financial Services":"Keuangan","Basic Materials":"Bahan baku","Energy":"Energi",
+  "Consumer Defensive":"Konsumer primer","Consumer Cyclical":"Konsumer non-primer","Communication Services":"Telekomunikasi & media",
+  "Industrials":"Industri","Real Estate":"Properti","Healthcare":"Kesehatan","Technology":"Teknologi","Utilities":"Utilitas"};
 
 let A = loadA();
-let S = loadS();          // kode -> data emiten + waktu scan
-let Q = {};               // kode -> "scanning" | pesan error
-let selected = Object.keys(S).sort((a,b)=>S[b].at-S[a].at)[0] || null;
-let sortKey = "at", sortDir = -1, rows = [];
+let DATA = {};   // kode -> data emiten terakhir (dipakai semua menu); at = waktu data diambil
+let HIST = [];   // kode yang discan manual di Home, terbaru di depan
+let PREF = loadPref();
+let view = "home";
+const sel = {home:null, lq45:null, syariah:null, mos:null};   // saham terpilih per menu
+const picked = {lq45:false, syariah:false, mos:false};        // pengguna sudah memilih baris sendiri di menu ini
+const Q = {};    // antrean scan Home: kode -> "scanning" | pesan error
+const LP = {};   // progres scan per menu
+const sorts = {hist:{k:"at", d:-1}, list:{k:"rank", d:1}};
+let detailMsg = null;   // {code, text}: pesan "Scan ulang" yang gagal, hanya ditampilkan untuk saham itu
+let queueNote = "";     // catatan di antrean Home (mis. kode yang diabaikan)
+let navScroll = false;  // menu yang dibuka dari kartu Home (klik biasa): gulir ke atas menu itu
 
+// ---------- Penyimpanan (localStorage bisa tidak tersedia; semua dibungkus try/catch) ----------
+function readJSON(key, fallback){ try{ const v = JSON.parse(localStorage.getItem(key)); return v ?? fallback; }catch(e){ return fallback; } }
+function writeJSON(key, value){ try{ localStorage.setItem(key, JSON.stringify(value)); }catch(e){} }
 function loadA(){
-  try{ const s = JSON.parse(localStorage.getItem(LS_A)); if(s) return {...DEFAULTS, ...s, on:{...DEFAULTS.on, ...(s.on||{})}}; }catch(e){}
-  return structuredClone(DEFAULTS);
+  const s = readJSON(LS.asumsi, null);
+  return s ? {...DEFAULTS, ...s, on:{...DEFAULTS.on, ...(s.on||{})}} : structuredClone(DEFAULTS);
 }
-function loadS(){ try{ return JSON.parse(localStorage.getItem(LS_S)) || {}; }catch(e){ return {}; } }
-function saveA(){ try{ localStorage.setItem(LS_A, JSON.stringify(A)); }catch(e){} }
-function saveS(){ try{ localStorage.setItem(LS_S, JSON.stringify(S)); }catch(e){} }
+function loadPref(){
+  const s = readJSON(LS.pref, {});
+  return Object.fromEntries(Object.entries(PREF_DEFAULTS).map(([k,d])=>[k, {...d, ...(s[k]||{})}]));
+}
+function loadStore(){
+  DATA = readJSON(LS.data, {});
+  const hist = readJSON(LS.hist, null);
+  if(Array.isArray(hist)){ HIST = hist; return; }
+  // Migrasi dari versi lama: riwayat dulu menyimpan data lengkap per kode.
+  const old = readJSON(LS.oldHist, {});
+  Object.values(old).forEach(s => { if(s?.code && (!DATA[s.code] || DATA[s.code].at < s.at)) DATA[s.code] = s; });
+  HIST = Object.values(old).filter(s=>s?.code).sort((a,b)=>b.at-a.at).map(s=>s.code);
+  saveStore(); writeJSON(LS.hist, HIST);
+  try{ localStorage.removeItem(LS.oldHist); }catch(e){}
+}
+function saveA(){ writeJSON(LS.asumsi, A); }
+function savePref(){ writeJSON(LS.pref, PREF); }
+// Tab lain bisa menulis penyimpanan yang sama: gabungkan per kode (data yang paling baru menang) sebelum menulis.
+function mergeData(disk){
+  let changed = false;
+  Object.entries(disk||{}).forEach(([c,s])=>{ if(s?.at && !(DATA[c]?.at >= s.at)){ DATA[c] = s; changed = true; } });
+  return changed;
+}
+function saveStore(){ mergeData(readJSON(LS.data, {})); writeJSON(LS.data, DATA); }
+// Riwayat hanya diubah lewat daftar tersimpan terbaru, agar tidak menimpa scan / hapus dari tab lain.
+function saveHist(f){ const d = readJSON(LS.hist, null); HIST = f(Array.isArray(d) ? d : HIST); writeJSON(LS.hist, HIST); }
+// Data tanpa field `partial` diambil sebelum perbaikan nilai buku & jumlah saham: anggap basi agar menu memindai ulang.
+const isStale = s => !s || s.partial===undefined || Date.now() - s.at > (s.partial.length ? PARTIAL_STALE_MS : STALE_MS);
+function storeStock(stock){
+  const s = {...stock, at: Date.parse(stock.fetchedAt) || Date.now()};
+  DATA[s.code] = s;
+  saveStore();
+  return s;
+}
 
+// ---------- Format ----------
 const fmtN = (v,d=0) => v==null||!isFinite(v) ? "–" : v.toLocaleString("id-ID",{maximumFractionDigits:d,minimumFractionDigits:d});
 const fmtP = (v,d=1,sign=false) => v==null||!isFinite(v) ? "–" : (sign&&v>0?"+":"") + (v*100).toLocaleString("id-ID",{maximumFractionDigits:d,minimumFractionDigits:d}) + "%";
 const fmtX = v => v==null||!isFinite(v) ? "–" : fmtN(v,2)+"x";
+// MoS tidak punya batas bawah (harga bisa berkali-kali nilai wajar): tampilan ringkas dibatasi "< −100%".
+const fmtMos = (v,d=1) => v!=null && v < -1 ? "< −100%" : fmtP(v,d,true);
+const mosTitle = s => s.mos!=null && s.mos < -1 ? ` title="MoS ${fmtP(s.mos,1,true)}: harga ${fmtN(s.price/s.fair,1)}× nilai wajar"` : "";
 const fmtCap = v => v==null ? "–" : v>=1e12 ? fmtN(v/1e12,1)+" T" : fmtN(v/1e9,0)+" M";
 const fmtT = t => new Date(t).toLocaleString("id-ID",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+const fmtD = iso => new Date(iso+"T00:00:00Z").toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"});
+const sectorName = s => SECTORS[s] || s || "Lainnya";
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s??"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
-// ---------- Scan ----------
-function parseCodes(text){
-  return [...new Set(text.toUpperCase().split(/[\s,;]+/).map(c=>c.replace(/\.JK$/,"")).filter(Boolean))].slice(0,30);
+// ---------- Status laporan keuangan ----------
+// Batas tercepat publikasi (Peraturan Bursa I-E untuk kuartal I & III, POJK 14/2022 untuk tengah tahunan &
+// tahunan): laporan kuartalan tanpa reviu akuntan paling lambat akhir bulan berikutnya, laporan tahunan paling lambat
+// akhir bulan ke-3 setelah tahun buku berakhir. Batas yang jatuh pada hari libur bergeser ke hari kerja berikutnya;
+// di sini hanya Sabtu/Minggu -> Senin. Laporan "terbaru" = kuartal paling akhir yang batas tercepatnya sudah lewat.
+// Kuartal dihitung dari bulan akhir tahun buku tiap emiten (umumnya Desember).
+function reportDeadline(y, m, annual){   // akhir periode tahun y bulan m (1–12) -> pukul 23:59:59 WIB hari batas
+  const d = new Date(Date.UTC(y, m + (annual ? 3 : 1), 0, 16, 59, 59));
+  const wd = new Date(d.getTime() + 7*3600000).getUTCDay();
+  if(wd===6 || wd===0) d.setUTCDate(d.getUTCDate() + (wd===6 ? 2 : 1));
+  return d;
+}
+const expCache = new Map();
+function expectedReport(fyMonth = 12){
+  const now = new Date(), key = `${fyMonth}|${now.toISOString().slice(0,13)}`;   // dihitung ulang tiap jam
+  if(expCache.has(key)) return expCache.get(key);
+  let y = now.getUTCFullYear(), m = now.getUTCMonth()+1, res = null;
+  for(let k=0; k<15 && !res; k++){
+    if((m - fyMonth + 12) % 3 === 0){
+      const annual = m === fyMonth, dl = reportDeadline(y, m, annual);
+      if(now > dl) res = {iso: new Date(Date.UTC(y, m, 0)).toISOString().slice(0,10), annual,
+        dueIso: new Date(dl.getTime() + 7*3600000).toISOString().slice(0,10)};
+    }
+    if(--m === 0){ m = 12; y--; }
+  }
+  expCache.set(key, res);
+  return res;
+}
+const fyMonthOf = s => s.lastFiscalYearEnd ? +s.lastFiscalYearEnd.slice(5,7) : 12;
+function periodLabel(iso, fyMonth = 12){
+  const m = +iso.slice(5,7), y = +iso.slice(0,4);
+  if(m === fyMonth) return `FY ${y}`;
+  return fyMonth===12 && m%3===0 ? `Q${m/3} ${y}` : fmtD(iso);
+}
+function lkInfo(s){
+  if(s.lastReport===undefined) return {key:"na", cls:"lk-na", short:"Perlu scan ulang", sub:"", state:"Perlu scan ulang",
+    tip:"Data ini diambil sebelum status laporan keuangan tersedia. Klik Scan ulang untuk melihatnya."};
+  const fy = fyMonthOf(s), exp = expectedReport(fy);
+  if(!s.lastReport || !exp) return {key:"na", cls:"lk-na", short:"–", sub:"", state:"Tidak diketahui",
+    tip:"Periode laporan keuangan tidak tersedia di data Yahoo Finance."};
+  const last = s.lastReport, q = periodLabel(last, fy), want = periodLabel(exp.iso, fy);
+  // Jumlah akhir kuartal emiten sesudah lastReport s.d. periode yang diharapkan (ceil: periode di luar kalender
+  // kuartalnya, mis. 31 Agu, tetap dihitung tertinggal dari 30 Sep).
+  const behind = Math.ceil(((+exp.iso.slice(0,4) - +last.slice(0,4))*12 + (+exp.iso.slice(5,7) - +last.slice(5,7)))/3);
+  const due = exp.annual
+    ? `batas publikasi laporan keuangan tahunannya ${fmtD(exp.dueIso)}`
+    : `batas tercepatnya ${fmtD(exp.dueIso)} untuk laporan tanpa reviu akuntan; laporan yang direviu atau diaudit boleh terbit hingga akhir bulan ke-2 atau ke-3`;
+  if(behind <= 0) return {key:"ok", cls:"lk-ok", short:"✓ Sudah update", sub:q, state:"Sudah update", q, want,
+    tip:`Data memakai laporan ${q} (per ${fmtD(last)}). Laporan terbaru per hari ini: ${want} (batas tercepat publikasinya ${fmtD(exp.dueIso)} sudah lewat).`};
+  if(behind === 1) return {key:"late", cls:"lk-late", short:"Belum update", sub:`data ${q}`, state:"Belum update", q, want,
+    tip:`Data masih memakai laporan ${q} (per ${fmtD(last)}); laporan ${want} belum ada di Yahoo Finance. Bisa karena emiten belum merilis (${due}) atau Yahoo belum memperbarui datanya.`};
+  return {key:"old", cls:"lk-old", short:"Tertinggal", sub:`data ${q}`, state:"Tertinggal", q, want,
+    tip:`Data memakai laporan ${q} (per ${fmtD(last)}), tertinggal ${behind} kuartal dari laporan ${want}.`};
+}
+// Tabel: lencana + periode di baris kedua; inline (rincian): lencana + periode di sebelahnya.
+const lkBadge = (s, inline=false) => {
+  const k = lkInfo(s), b = `<span class="lk ${k.cls}" title="${esc(k.tip)}">${k.short}</span>`;
+  return !k.sub ? b : inline ? `${b} <span class="mut">${esc(k.sub)}</span>` : `${b}<div class="nm">${esc(k.sub)}</div>`;
+};
+
+// ---------- Scan (antrean bersama untuk Home & menu Top 20) ----------
+// Permintaan pengguna (Scan, Scan ulang) didahulukan dari pemindaian menu. Rate limit (429) atau server tak
+// terjangkau menjeda SEMUA permintaan bersama-sama; bila terulang tiga gelombang, sisa antrean dihentikan.
+let active = 0, pauseUntil = 0, pauseSetAt = 0, strikes = 0, pumpTimer = 0, pauseNet = false;
+const waiting = [];              // job {code, urgent, run, fail, startedAt}
+const inflight = new Map();      // kode -> {promise, job}
+const running = new Set();       // kode yang permintaannya sedang dikirim (bukan sekadar antre)
+const paused = () => pauseUntil > Date.now();
+
+function pump(){
+  clearTimeout(pumpTimer);
+  while(active < MAX_PARALLEL && waiting.length){
+    if(paused()){ pumpTimer = setTimeout(pump, pauseUntil - Date.now()); return; }
+    const job = waiting.shift();
+    active++;
+    job.run().finally(()=>{ active--; pump(); });
+  }
+}
+// Permintaan pengguna antre di depan sesuai urutan masuk; percobaan ulang kembali ke depan kelompoknya.
+function enqueue(job, retry){
+  const n = waiting.findIndex(j=>!j.urgent), end = n < 0 ? waiting.length : n;
+  if(retry && job.urgent) waiting.unshift(job);
+  else if(retry || job.urgent) waiting.splice(end, 0, job);
+  else waiting.push(job);
+  pump();
 }
 
-async function scan(codes){
+// Satu permintaan ke API; tidak pernah melempar exception.
+async function requestStock(code){
+  try{
+    const r = await fetch(`${API}?code=${encodeURIComponent(code)}`);
+    const body = await r.json().catch(()=>({error:`Server tidak merespons dengan benar (HTTP ${r.status})`, retryable: r.status>=500}));
+    return {status: r.status, ...body};
+  }catch(e){
+    return {status:0, network:true, retryable:true,
+      error:"Tidak bisa menghubungi server scan. Periksa koneksi internet (versi lokal: pastikan jalankan.bat masih berjalan)."};
+  }
+}
+
+// Gelombang 429 / gangguan jaringan berikutnya menggandakan jeda (10, 20, 40, 60 detik). Mulai gelombang ke-3,
+// sisa antrean dihentikan agar tidak terus membebani Yahoo. Kembalikan true bila antrean dihentikan.
+function throttled(job, message, net){
+  if(job.startedAt >= pauseSetAt){   // permintaan yang dikirim sebelum jeda terakhir = gelombang yang sama
+    strikes++;
+    pauseSetAt = Date.now();
+    pauseUntil = pauseSetAt + Math.min(60000, 10000 * 2**(strikes-1)) + Math.random()*2000;
+    pauseNet = !!net;
+  }
+  scheduleRender();
+  if(strikes < 3) return false;
+  waiting.splice(0).forEach(j => j.fail(`${message} Pemindaian dihentikan sementara.`));
+  return true;
+}
+
+// Ambil satu emiten; permintaan ganda untuk kode yang sama digabung. Gagal sementara dicoba ulang 2x.
+function fetchStock(code, {urgent=false}={}){
+  const cur = inflight.get(code);
+  if(cur){
+    // Sudah antre di pemindaian menu: pindahkan ke antrean permintaan pengguna bila pengguna memintanya langsung.
+    if(urgent && !cur.job.urgent){
+      cur.job.urgent = true;
+      const i = waiting.indexOf(cur.job);
+      if(i >= 0){ waiting.splice(i, 1); enqueue(cur.job); }
+    }
+    return cur.promise;
+  }
+  const entry = {};
+  entry.promise = new Promise((resolve, reject)=>{
+    let attempt = 0;
+    const job = entry.job = {code, urgent, fail: msg => reject(new Error(msg)), run: async ()=>{
+      job.startedAt = Date.now();
+      running.add(code); scheduleRender();
+      const res = await requestStock(code);
+      running.delete(code);
+      if(res.status===200 && res.stock){ strikes = 0; resolve(storeStock(res.stock)); return; }
+      const limitedNow = res.status===429 || res.network;
+      if(limitedNow && throttled(job, res.error, res.network)){ job.fail(`${res.error} Pemindaian dihentikan sementara.`); return; }
+      // Kode indeks pasti ada: 404 karena gangguan sesaat Yahoo dicoba sekali lagi.
+      const retry = limitedNow || res.retryable || (res.status===404 && attempt===0 && isIndexCode(code));
+      if(!retry || attempt >= 2){ job.fail(res.error || `HTTP ${res.status}`); return; }
+      attempt++;
+      // Slot dilepas selama menunggu: 429 menunggu jeda bersama, gangguan lain menunggu 2,5 / 7 detik.
+      if(limitedNow) enqueue(job, true);
+      else setTimeout(()=>enqueue(job, true), attempt===1 ? 2500 : 7000);
+    }};
+    enqueue(job);
+  }).finally(()=>inflight.delete(code));
+  inflight.set(code, entry);
+  return entry.promise;
+}
+
+function parseCodes(text){
+  return [...new Set(text.toUpperCase().split(/[\s,;]+/).map(c=>c.replace(/\.JK$/,"")).filter(Boolean))];
+}
+
+function announce(where, text){ $(where==="home" ? "home-live" : "list-live").textContent = text; }
+
+function scanManual(codes){
   if(!codes.length) return;
   codes.forEach(c => Q[c] = "scanning");
-  renderQueue();
-  await Promise.all(codes.map(async c => {
-    try{
-      const r = await fetch(`${API}?code=${encodeURIComponent(c)}`);
-      const j = await r.json().catch(() => ({error:`Server tidak merespons dengan benar (HTTP ${r.status})`}));
-      if(!r.ok || j.error) throw new Error(j.error || `HTTP ${r.status}`);
-      S[j.stock.code] = {...j.stock, at:Date.now()};
-      delete Q[c];
-      saveS();
-      selected = j.stock.code;
-      render();
-    }catch(e){
-      Q[c] = e instanceof TypeError ? "Tidak bisa menghubungi server scan. Pastikan jalankan.bat masih berjalan." : e.message;
-    }
-    renderQueue();
+  render();
+  let left = codes.length, failed = 0;
+  codes.forEach(c => fetchStock(c, {urgent:true}).then(s=>{
+    delete Q[c];
+    saveHist(h => [s.code, ...h.filter(x=>x!==s.code)]);
+    sel.home = s.code;
+    // Satu kode: tampilkan rinciannya segera, kecuali tombol mouse sedang ditekan (klik lain sedang berlangsung).
+    if(codes.length===1){ if(pointerHeld) scheduleRender(); else { render(); if(view==="home") revealDetail(); } }
+  }).catch(e=>{ Q[c] = e.message; failed++; }).finally(()=>{
+    if(--left === 0) announce("home", codes.length===1
+      ? (failed ? `${c} gagal dipindai.` : `${c} selesai dipindai.`)
+      : `${codes.length-failed} dari ${codes.length} saham selesai dipindai${failed ? `, ${failed} gagal` : ""}.`);
+    scheduleRender();
   }));
 }
 
 function renderQueue(){
-  const busy = Object.values(Q).some(v=>v==="scanning");
-  $("go").disabled = busy; $("go").textContent = busy ? "Scanning…" : "Scan";
-  $("queue").innerHTML = Object.entries(Q).map(([c,v]) => v==="scanning"
-    ? `<div><span class="spin"></span>Scanning <b>${esc(c)}</b>: mengambil harga, laporan keuangan & dividen…</div>`
-    : `<div class="err"><b>${esc(c)}</b>: ${esc(v)} <button data-x="${esc(c)}" title="Tutup">×</button></div>`).join("");
+  const scanning = Object.keys(Q).filter(c=>Q[c]==="scanning");
+  const queued = scanning.filter(c=>!running.has(c));
+  const lines = queueNote ? [`<div class="mut">${esc(queueNote)}</div>`] : [];
+  scanning.filter(c=>running.has(c)).forEach(c => lines.push(
+    `<div><span class="spin"></span>Scanning <b>${esc(c)}</b>: mengambil harga, laporan keuangan & dividen…</div>`));
+  if(queued.length) lines.push(`<div><span class="spin"></span>${paused() ? `Menunggu jeda karena ${pauseWhy()}:` : "Menunggu antrean:"} <b>${queued.map(esc).join(", ")}</b></div>`);
+  Object.entries(Q).filter(([,v])=>v!=="scanning").forEach(([c,v]) => lines.push(
+    `<div class="err"><b>${esc(c)}</b>: ${esc(v)} <button data-x="${esc(c)}" aria-label="Tutup pesan ${esc(c)}" title="Tutup">×</button></div>`));
+  setHtml($("queue"), lines.join(""));
+}
+const pauseWhy = () => pauseNet ? "server scan tidak terjangkau (periksa koneksi; versi lokal: jalankan.bat)" : "Yahoo Finance membatasi permintaan";
+
+// Pindai konstituen menu: hanya yang belum ada / sudah basi, kecuali force.
+function ensureList(key, {force=false, only=null}={}){
+  if(LP[key]?.running) return;
+  const codes = only || listCodes(key).filter(c => force || isStale(DATA[c]));
+  const st = LP[key] = {total:codes.length, done:0, failed:{}, running:codes.length>0};
+  if(codes.length) announce("list", `Memindai ${codes.length} saham ${LISTS[key].title}…`);
+  render();
+  codes.forEach(c => fetchStock(c)
+    .catch(e=>{ st.failed[c] = e.message; })
+    .finally(()=>{
+      st.done++;
+      if(st.done >= st.total){
+        st.running = false;
+        const nf = Object.keys(st.failed).length;
+        announce("list", `Pemindaian ${LISTS[key].title} selesai: ${st.total-nf} berhasil${nf ? `, ${nf} gagal` : ""}.`);
+      }
+      scheduleRender();
+    }));
 }
 
 // ---------- Valuasi ----------
@@ -393,54 +767,240 @@ const statusBadge = s => {
   const [cls,lab] = STATUS[s.status];
   return `<span class="badge ${cls}">${s.status==="few" ? `${lab} (${s.n}/${A.minN})` : lab}</span>`;
 };
-const COLS = [
-  {k:"code",  t:"Saham", l:true},
-  {k:"price", t:"Harga"},
-  {k:"pbv",   t:"PBV"},
-  {k:"per",   t:"PER"},
-  {k:"roe",   t:"ROE"},
-  {k:"dy",    t:"Div. yield"},
-  {k:"bvps",  t:"Nilai buku"},
-  {k:"fair",  t:"Nilai wajar"},
-  {k:"mos",   t:"MoS (+/−)"},
-  {k:"buyAt", t:"Harga beli"},
-  {k:"status",t:"Status", l:true},
-  {k:"at",    t:"Discan"},
-];
 
-// ---------- Render ----------
-function render(){
-  rows = Object.values(S).map(value);
-  rows.sort((a,b)=>{
-    let x = a[sortKey], y = b[sortKey];
-    if(sortKey==="status"){ x = STATUS_ORDER[x]; y = STATUS_ORDER[y]; }
-    if(x==null && y==null) return 0; if(x==null) return 1; if(y==null) return -1;
-    return (typeof x==="string" ? x.localeCompare(y) : x-y) * sortDir;
+// ---------- Menu Top 20 ----------
+function listCodes(key){
+  const idx = LISTS[key].index;
+  return idx ? INDEXES[idx].codes : [...new Set([...INDEXES.lq45.codes, ...INDEXES.jii.codes])];
+}
+function listMode(key){ const L = LISTS[key]; return L.ranks.includes(PREF[key].rank) ? PREF[key].rank : L.ranks[0]; }
+
+// Peringkat konstituen yang sudah punya data. Saat diurutkan menurut MoS, emiten rugi / metode kurang /
+// tanpa nilai wajar dikecualikan (kecuali dicentang) agar MoS semu dari satu-dua metode tidak naik ke atas.
+function rankList(key){
+  const P = PREF[key], mode = listMode(key), codes = listCodes(key);
+  const have = codes.filter(c=>DATA[c]).map(c=>value(DATA[c]));
+  const excluded = [], stale = [];
+  let pool = have.filter(s=>{
+    if(mode==="mos" && !P.incl && (s.mos==null || s.status==="few" || s.weak==="Rugi")){ excluded.push(s); return false; }
+    if(P.fresh && lkInfo(s).key!=="ok"){ stale.push(s); return false; }
+    return true;
   });
-  $("thead").innerHTML = COLS.map(c =>
-    `<th class="${c.l?"l":""}" data-k="${c.k}">${c.t}${sortKey===c.k?(sortDir>0?" ▲":" ▼"):""}</th>`).join("") + "<th></th>";
-  $("tbody").innerHTML = rows.length ? rows.map(s => {
+  pool.sort(mode==="mcap" ? (a,b)=>(b.mcap??-1)-(a.mcap??-1) : (a,b)=>(b.mos??-Infinity)-(a.mos??-Infinity));
+  pool.forEach((s,i)=>{ s.rank = i+1; });
+  return {codes, have, pool, excluded, stale, mode};
+}
+
+function rankPhrase(mode){ return mode==="mcap" ? "kapitalisasi pasar terbesar" : "margin of safety (MoS) terbesar"; }
+function indexNote(idx){
+  const I = INDEXES[idx];
+  const src = I.url ? `<a href="${esc(I.url)}" target="_blank" rel="noopener">${esc(I.source||"sumber")}</a>` : esc(I.source);
+  const old = indexExpired(idx) ? ` <span class="err">— periode ini sudah berakhir; daftar konstituen perlu diperbarui</span>` : "";
+  return `${esc(I.name)} periode ${esc(I.period)}${src ? ` (sumber: ${src})` : ""}${old}`;
+}
+function listDesc(key, mode){
+  const n = listCodes(key).length;
+  if(key==="mos") return `20 saham dengan MoS terbesar dari gabungan LQ45 dan JII (${n} saham unik). Konstituen: ${indexNote("lq45")}; ${indexNote("jii")}.`;
+  const extra = key==="syariah" ? ", indeks 30 saham syariah paling likuid" : "";
+  return `20 teratas dari ${n} konstituen ${indexNote(LISTS[key].index)}${extra}, diurutkan menurut ${rankPhrase(mode)}.`;
+}
+function cardDesc(key){
+  if(key==="mos") return "MoS terbesar dari gabungan LQ45 + JII.";
+  return key==="lq45" ? "45 saham berlikuiditas tinggi dan berkapitalisasi besar di BEI." : "Jakarta Islamic Index: 30 saham syariah paling likuid.";
+}
+const listIndexes = key => LISTS[key].index ? [LISTS[key].index] : ["lq45","jii"];
+
+// ---------- Tabel ----------
+function codeTags(s){
+  const t = [];
+  if(s.pbv!=null && s.pbv<1) t.push('<span class="tag bv">&lt;BV</span>');
+  if(s.weak) t.push(`<span class="tag">${s.weak}</span>`);
+  if(s.partial?.length) t.push(`<span class="tag" title="Sebagian data gagal diambil: ${esc(s.partial.join(", "))}">sebagian</span>`);
+  // Di menu, data yang sudah basi (pembaruannya gagal) ditandai agar tidak dikira terbaru.
+  if(view!=="home" && Date.now()-s.at > STALE_MS) t.push(`<span class="tag" title="Data diambil ${fmtT(s.at)}; pembaruan belum berhasil">lama</span>`);
+  return t.join("");
+}
+const CELL = {
+  del:   s => `<td class="stick"><button class="del" data-del="${s.code}" aria-label="Hapus ${s.code} dari riwayat" title="Hapus dari riwayat">×</button></td>`,
+  rank:  s => `<td class="rank stick">${s.rank??"–"}</td>`,
+  code:  s => `<td class="l stick2"><div><button class="code" data-c="${s.code}">${s.code}</button>${codeTags(s)}</div><div class="nm" title="${esc(s.name)}">${esc(s.name)}</div></td>`,
+  sector:s => `<td class="l mut">${esc(sectorName(s.sector))}</td>`,
+  price: s => `<td>${fmtN(s.price)}</td>`,
+  mcap:  s => `<td>${fmtCap(s.mcap)}</td>`,
+  pbv:   s => `<td>${fmtX(s.pbv)}</td>`,
+  per:   s => `<td>${fmtX(s.per)}</td>`,
+  roe:   s => `<td>${fmtP(s.roe)}</td>`,
+  dy:    s => `<td>${fmtP(s.dy)}</td>`,
+  bvps:  s => `<td>${fmtN(s.bvps)}</td>`,
+  fair:  s => `<td>${fmtN(s.fair)}<div class="nm">${s.n>1?`${s.n} metode · ${fmtN(s.lo)} – ${fmtN(s.hi)}`:""}</div></td>`,
+  mos:   s => {
     const w = s.mos==null ? 0 : Math.min(Math.abs(s.mos),1)*50;
     const bar = s.mos==null ? "" : s.mos>=0
       ? `<i style="left:50%;width:${w}%;background:var(--good)"></i>`
       : `<i style="right:50%;width:${w}%;background:var(--bad)"></i>`;
-    return `<tr data-c="${s.code}" class="${selected===s.code?"sel":""}">
-      <td class="l"><div class="code">${s.code}${s.pbv!=null&&s.pbv<1?'<span class="tag bv">&lt;BV</span>':""}${s.weak?`<span class="tag">${s.weak}</span>`:""}</div><div class="nm" title="${esc(s.name)}">${esc(s.name)}</div></td>
-      <td>${fmtN(s.price)}</td>
-      <td>${fmtX(s.pbv)}</td>
-      <td>${fmtX(s.per)}</td>
-      <td>${fmtP(s.roe)}</td>
-      <td>${fmtP(s.dy)}</td>
-      <td>${fmtN(s.bvps)}</td>
-      <td>${fmtN(s.fair)}<div class="nm">${s.n>1?`${s.n} metode · ${fmtN(s.lo)} – ${fmtN(s.hi)}`:""}</div></td>
-      <td><div class="mos"><span class="${s.mos>0?"pos":s.mos<0?"neg":""}" style="font-weight:650">${fmtP(s.mos,1,true)}</span><div class="mosbar">${bar}</div></div></td>
-      <td>${fmtN(s.buyAt)}</td>
-      <td class="l">${statusBadge(s)}</td>
-      <td class="mut">${fmtT(s.at)}</td>
-      <td><button data-del="${s.code}" title="Hapus dari riwayat">×</button></td>
-    </tr>`;}).join("") : `<tr><td colspan="${COLS.length+1}" class="empty">Belum ada saham yang discan.</td></tr>`;
-  $("rescan").disabled = $("clear").disabled = !rows.length;
+    return `<td><div class="mos"><span class="${s.mos>0?"pos":s.mos<0?"neg":""}" style="font-weight:650"${mosTitle(s)}>${fmtMos(s.mos)}</span><div class="mosbar">${bar}</div></div></td>`;
+  },
+  buyAt: s => `<td>${fmtN(s.buyAt)}</td>`,
+  status:s => `<td class="l">${statusBadge(s)}</td>`,
+  lk:    s => `<td class="l">${lkBadge(s)}</td>`,
+  at:    s => `<td class="mut">${fmtT(s.at)}</td>`,
+};
+// Kolom penentu keputusan (MoS, status, laporan keuangan) langsung setelah nama agar terlihat tanpa menggeser tabel.
+const HIST_COLS = [
+  {k:"del",t:"Hapus",c:"stick",nosort:1},{k:"code",t:"Saham",l:1,c:"stick2"},{k:"mos",t:"MoS (+/−)"},
+  {k:"status",t:"Status",l:1},{k:"lk",t:"Lap. keuangan",l:1},{k:"price",t:"Harga"},{k:"fair",t:"Nilai wajar"},
+  {k:"buyAt",t:"Harga beli"},{k:"pbv",t:"PBV"},{k:"per",t:"PER"},{k:"roe",t:"ROE"},{k:"dy",t:"Div. yield"},
+  {k:"bvps",t:"Nilai buku"},{k:"at",t:"Data"},
+];
+const LIST_COLS = [
+  {k:"rank",t:"#",c:"stick"},{k:"code",t:"Saham",l:1,c:"stick2"},{k:"mos",t:"MoS (+/−)"},{k:"status",t:"Status",l:1},
+  {k:"lk",t:"Lap. keuangan",l:1},{k:"price",t:"Harga"},{k:"fair",t:"Nilai wajar"},{k:"buyAt",t:"Harga beli"},
+  {k:"mcap",t:"Kap. pasar"},{k:"pbv",t:"PBV"},{k:"per",t:"PER"},{k:"roe",t:"ROE"},{k:"dy",t:"Div. yield"},
+  {k:"sector",t:"Sektor",l:1},
+];
+function sortVal(s, k){
+  if(k==="status") return STATUS_ORDER[s.status];
+  if(k==="lk") return s.lastReport || null;
+  if(k==="sector") return sectorName(s.sector);
+  return s[k];
+}
+function sortRows(rows, {k, d}){
+  rows.sort((a,b)=>{
+    const x = sortVal(a,k), y = sortVal(b,k);
+    if(x==null && y==null) return 0; if(x==null) return 1; if(y==null) return -1;
+    return (typeof x==="string" ? x.localeCompare(y) : x-y) * d;
+  });
+}
+const headHtml = (cols, srt) => cols.map(c => {
+  const cls = [c.l && "l", c.c].filter(Boolean).join(" ");
+  if(c.nosort) return `<th class="${cls}"><span class="sr">${c.t}</span></th>`;
+  const on = srt.k===c.k;
+  return `<th class="${cls}" data-k="${c.k}"${on ? ` aria-sort="${srt.d>0?"ascending":"descending"}"` : ""}><button type="button" class="thbtn" data-sort="${c.k}">${c.t}${on?(srt.d>0?" ▲":" ▼"):""}</button></th>`;
+}).join("");
+const rowHtml = (s, cols) => {
+  const on = sel[view]===s.code;
+  return `<tr data-c="${s.code}"${on ? ' class="sel" aria-current="true"' : ""}>${cols.map(c=>CELL[c.k](s)).join("")}</tr>`;
+};
+
+// ---------- Render ----------
+// Hasil scan datang beruntun: render digabung (paling sering tiap 250 ms) dan ditunda selama tombol mouse / jari
+// masih ditekan, agar klik pada baris tidak hilang karena tabel diganti di tengah klik.
+let renderTimer = 0, pointerHeld = 0;
+function scheduleRender(){ if(!renderTimer) renderTimer = setTimeout(flushRender, 250); }
+function flushRender(){
+  renderTimer = 0;
+  if(pointerHeld && Date.now() - pointerHeld < 3000){ renderTimer = -1; return; }   // dilanjutkan saat dilepas
+  render();
+}
+function render(){
+  if(renderTimer > 0) clearTimeout(renderTimer);
+  renderTimer = 0;
+  if(expectedReport(12)?.iso !== guideExp) buildGuideLk();
+  if(view==="home"){ renderQueue(); renderHistory(); renderCards(); }
+  else renderList();
   renderDetail();
+}
+
+// Ganti isi elemen tanpa menghilangkan fokus keyboard dari tombol di dalamnya.
+function setHtml(el, html){
+  const a = document.activeElement;
+  // Nama tag ikut dicocokkan: baris <tr data-c> juga punya data-c seperti tombol kodenya.
+  const key = a && a !== el && el.contains(a)
+    ? ["re","open","act","c","del","sort","x","card"].filter(k=>a.dataset[k]!=null).map(k=>`[data-${k}="${CSS.escape(a.dataset[k])}"]`).join("")
+    : "";
+  el.innerHTML = html;
+  if(key) el.querySelector(a.tagName.toLowerCase() + key)?.focus({preventScroll:true});
+}
+
+function renderHistory(){
+  const rows = HIST.filter(c=>DATA[c]).map(c=>value(DATA[c]));
+  sortRows(rows, sorts.hist);
+  setHtml($("hist-head"), headHtml(HIST_COLS, sorts.hist));
+  setHtml($("hist-body"), rows.map(s=>rowHtml(s, HIST_COLS)).join(""));
+  $("hist-wrap").hidden = !rows.length;
+  $("hist-empty").hidden = !!rows.length;
+  $("rescan").disabled = $("clear").disabled = !rows.length;
+}
+
+function renderCards(){
+  setHtml($("cards"), Object.entries(LISTS).map(([key,L])=>{
+    const R = rankList(key), top = R.pool.slice(0,3), total = R.codes.length;
+    const expired = listIndexes(key).filter(indexExpired).map(i=>INDEXES[i].name);
+    const warn = expired.length ? `<div class="err small">Periode konstituen ${expired.join(" &amp; ")} sudah berakhir; daftar perlu diperbarui.</div>` : "";
+    let body = `<div class="mut small">Belum dipindai. ${total} saham akan dipindai saat menu dibuka.</div>`;
+    if(R.have.length){
+      const items = top.map(s=>{
+        const k = lkInfo(s);
+        return `<li><b>${s.code}</b> <span class="${s.mos>0?"pos":s.mos<0?"neg":"mut"}"${mosTitle(s)}>MoS ${fmtMos(s.mos,0)}</span>${R.mode==="mcap"?` <span class="mut">· ${fmtCap(s.mcap)}</span>`:""}${s.weak?` <span class="tag">${s.weak}</span>`:""}${k.key==="late"||k.key==="old"?` <span class="tag" title="${esc(k.tip)}">LK ${esc(k.sub)}</span>`:""}</li>`;
+      }).join("");
+      const hidden = [R.excluded.length && `${R.excluded.length} dikecualikan`, R.stale.length && `${R.stale.length} disembunyikan (laporan belum terbaru)`].filter(Boolean);
+      const oldest = Math.min(...R.have.map(s=>s.at));
+      body = `${top.length ? `<ol>${items}</ol>` : `<div class="mut small">Tidak ada saham yang lolos filter menu ini${hidden.length ? ` (${hidden.join(", ")})` : ""}.</div>`}
+        <div class="mut small">${R.have.length}/${total} saham terpindai · urut ${rankPhrase(R.mode)}${top.length && hidden.length ? ` · ${hidden.join(", ")}` : ""}</div>
+        <div class="mut small">Data: ${fmtT(oldest)}${R.have.some(isStale) ? " · sebagian sudah lama, diperbarui saat menu dibuka" : ""}</div>`;
+    }
+    return `<a class="panel card" href="#${key}" data-card="${key}"><h3>${L.title}</h3><div class="sub">${cardDesc(key)}</div>${warn}${body}<span class="go">Buka menu →</span></a>`;
+  }).join(""));
+}
+
+// Pesan gagal yang sama dikelompokkan: "Yahoo Finance sedang membatasi… (12 saham: AADI, ADMR, …)".
+function failureGroups(failed){
+  const by = {};
+  Object.entries(failed).forEach(([c,m])=>{ (by[m] ||= []).push(c); });
+  return Object.entries(by).map(([m,cs])=>
+    `${esc(m)} <span class="mut">(${cs.length} saham: ${cs.slice(0,12).map(esc).join(", ")}${cs.length>12?", …":""})</span>`);
+}
+
+function renderList(){
+  const key = view, L = LISTS[key], P = PREF[key], R = rankList(key), st = LP[key];
+  $("list-title").textContent = L.title;
+  $("list-desc").innerHTML = listDesc(key, R.mode);
+  $("list-rank-wrap").hidden = L.ranks.length < 2;
+  $("list-rank").value = R.mode;
+  $("list-incl-wrap").hidden = R.mode !== "mos";
+  $("list-incl").checked = P.incl;
+  $("list-fresh").checked = P.fresh;
+  // Tidak di-disable agar fokus keyboard tidak hilang; klik saat memindai diabaikan oleh ensureList.
+  $("list-refresh").setAttribute("aria-disabled", !!st?.running);
+
+  const parts = [], failed = st ? Object.keys(st.failed) : [];
+  if(st?.running){
+    parts.push(`<div><span class="spin"></span> Memindai ${st.done}/${st.total} saham…${paused() ? ` <b>Menunggu jeda karena ${pauseWhy()}.</b>` : ""}${failed.length ? ` <span class="err">${failed.length} gagal: ${esc(st.failed[failed[0]])}</span>` : ""} <span class="mut">Peringkat diperbarui otomatis.</span></div>
+      <div class="progress"><i style="width:${st.total ? Math.round(st.done/st.total*100) : 100}%"></i></div>`);
+  }else if(failed.length){
+    parts.push(`<div class="err">${failed.length} saham gagal dipindai: ${failureGroups(st.failed).join("; ")} <button data-act="retry">Coba lagi</button></div>`);
+  }
+  const missing = R.codes.length - R.have.length;
+  const times = R.have.map(s=>s.at);
+  const lk = R.have.reduce((acc,s)=>{ acc[lkInfo(s).key]++; return acc; }, {ok:0, late:0, old:0, na:0});
+  const e = expectedReport(12);
+  parts.push(`<div class="stats">
+    <span><b>${R.have.length}</b>/${R.codes.length} saham terpindai${missing && !st?.running ? ` (${missing} belum ada data)` : ""}</span>
+    ${times.length ? `<span>Data: ${fmtT(Math.min(...times))}${Math.max(...times)-Math.min(...times) > 60000 ? ` – ${fmtT(Math.max(...times))}` : ""}</span>` : ""}
+    <span title="${e ? `Laporan terbaru per hari ini untuk tahun buku Desember: ${periodLabel(e.iso)} (batas tercepat publikasinya ${fmtD(e.dueIso)} sudah lewat)` : ""}">Lap. keuangan: <b>${lk.ok}</b> sudah update · ${lk.late} belum${lk.old?` · ${lk.old} tertinggal`:""}${lk.na?` · ${lk.na} tidak diketahui`:""}</span>
+    ${R.excluded.length ? `<span title="${esc(R.excluded.map(s=>s.code).join(", "))}">${R.excluded.length} dikecualikan (rugi / metode kurang / tanpa nilai wajar)</span>` : ""}
+    ${R.stale.length ? `<span title="${esc(R.stale.map(s=>s.code).join(", "))}">${R.stale.length} disembunyikan (laporan belum terbaru)</span>` : ""}
+  </div>`);
+  setHtml($("list-prog"), parts.join(""));
+
+  const shown = P.all ? [...R.pool] : R.pool.slice(0, TOP_N);
+  sortRows(shown, sorts.list);
+  // Sebelum pengguna memilih sendiri, rincian mengikuti peringkat #1 (saat pemindaian pertama #1 bisa berganti).
+  if(!picked[key] || !R.pool.some(s=>s.code===sel[key])){ sel[key] = R.pool[0]?.code || null; picked[key] = false; }
+  setHtml($("list-head"), headHtml(LIST_COLS, sorts.list));
+  setHtml($("list-body"), shown.map(s=>rowHtml(s, LIST_COLS)).join(""));
+  // Pesan kosong di luar tabel lebar agar tetap terbaca di layar sempit.
+  let empty = "";
+  if(!shown.length){
+    if(st?.running) empty = "Sedang memindai data…";
+    else if(!R.have.length) empty = failed.length ? "Data belum bisa diambil. Lihat alasannya di atas, lalu klik <b>Coba lagi</b>." : "Belum ada data.";
+    else empty = `Tidak ada saham yang lolos filter: ${[R.excluded.length && `${R.excluded.length} dikecualikan (rugi / metode kurang)`, R.stale.length && `${R.stale.length} laporan keuangannya belum terbaru`].filter(Boolean).join(", ")}. Ubah pilihan di atas untuk menampilkannya.`;
+  }
+  $("list-empty").innerHTML = empty;
+  $("list-empty").hidden = !empty;
+  $("list-wrap").hidden = $("list-note").hidden = !!empty;
+  $("list-more").hidden = R.pool.length <= TOP_N;
+  $("list-more").textContent = P.all ? `Tampilkan ${TOP_N} teratas saja` : `Tampilkan semua (${R.pool.length})`;
 }
 
 // Daftar penjelasan dibuat sekali agar metode yang sedang dibuka tidak tertutup saat render ulang.
@@ -454,6 +1014,28 @@ function buildGuide(){
       <div><div class="k">Keterbatasan</div>${esc(m.limit)}</div>
     </div>
   </details>`).join("");
+  $("guide-menus").innerHTML = `
+    <li><b>Top 20 LQ45:</b> dari konstituen ${indexNote("lq45")}. Urutan bawaan menurut kapitalisasi pasar terbesar; bisa diganti ke MoS terbesar.</li>
+    <li><b>Top 20 Syariah:</b> dari konstituen ${indexNote("jii")}, yaitu 30 saham syariah paling likuid. Urutan bawaan menurut kapitalisasi pasar terbesar.</li>
+    <li><b>Top 20 MoS:</b> gabungan LQ45 dan JII, diurutkan menurut margin of safety terbesar.</li>
+    <li>Saat diurutkan menurut MoS, emiten <b>rugi</b>, berstatus <b>Metode kurang</b>, atau tanpa nilai wajar <b>dikecualikan</b> (jumlahnya ditampilkan) karena MoS-nya tidak bisa diandalkan. Centang "Sertakan emiten rugi &amp; metode kurang" untuk tetap menampilkannya.</li>
+    <li>Data tiap saham dipindai langsung saat menu dibuka (${MAX_PARALLEL} saham sekaligus) dan disimpan di browser. Data yang lebih tua dari ${STALE_MS/3600000} jam dipindai ulang otomatis; tombol <b>Perbarui data</b> memindai ulang semuanya.</li>
+    <li>Daftar konstituen indeks diperbarui manual mengikuti pengumuman Bursa Efek Indonesia: LQ45 dievaluasi tiap 3 bulan (berlaku awal Februari, Mei, Agustus, November); JII tiap 6 bulan mengikuti Daftar Efek Syariah OJK (berlaku awal Juni &amp; Desember). Bila periode sudah lewat, deskripsi menu dan kartu di Home menampilkan peringatan.</li>`;
+  buildGuideLk();
+}
+
+// Dibangun ulang bila laporan terbaru berganti (halaman yang dibiarkan terbuka melewati batas publikasi).
+let guideExp;
+function buildGuideLk(){
+  const e = expectedReport(12);
+  guideExp = e?.iso;
+  $("guide-lk").innerHTML = `
+    <li>Kolom <b>Lap. keuangan</b> menunjukkan periode laporan keuangan terakhir yang dipakai Yahoo Finance untuk data saham itu (nilai buku, ROE, EPS 12 bulan).</li>
+    <li>Per hari ini, laporan terbaru yang batas tercepat publikasinya sudah lewat adalah <b>${e ? periodLabel(e.iso) : "–"}</b>${e ? ` (periode ${fmtD(e.iso)}, batas ${fmtD(e.dueIso)})` : ""} untuk emiten bertahun buku Desember.</li>
+    <li><span class="lk lk-ok">✓ Sudah update</span>: data sudah memakai laporan tersebut atau yang lebih baru.</li>
+    <li><span class="lk lk-late">Belum update</span> (dengan keterangan mis. "data Q2 2026"): data masih memakai laporan satu kuartal sebelumnya. Bisa karena emiten belum merilis (laporan yang direviu terbatas atau diaudit boleh terbit lebih lambat) atau karena Yahoo Finance belum memperbarui datanya. Valuasinya belum mencerminkan kinerja terbaru.</li>
+    <li><span class="lk lk-old">Tertinggal</span>: tertinggal dua kuartal atau lebih.</li>
+    <li>Batas yang dipakai adalah batas <b>tercepat</b> menurut Peraturan Bursa I-E (laporan kuartal I dan III) dan POJK 14/2022 (laporan tengah tahunan dan tahunan): laporan keuangan kuartalan tanpa reviu akuntan paling lambat akhir bulan berikutnya (kuartal III → 31 Oktober), yang direviu terbatas akhir bulan ke-2, yang diaudit akhir bulan ke-3; laporan keuangan tahunan paling lambat akhir bulan ke-3 setelah tahun buku berakhir (akhir Maret untuk tahun buku Desember). Batas yang jatuh pada hari libur bergeser ke hari kerja berikutnya; halaman ini hanya menggeser Sabtu/Minggu ke Senin. Emiten dengan tahun buku selain Desember dihitung dari bulan akhir tahun bukunya. Cek tanggal rilis resmi di idx.co.id.</li>`;
 }
 
 function updateGuide(s){
@@ -472,35 +1054,71 @@ function openMethod(id){
   setTimeout(()=>d.classList.remove("flash"), 1500);
 }
 
+function revealDetail(e){
+  const d = $("detail"), r = d.getBoundingClientRect();
+  if(r.top > innerHeight*0.7 || r.bottom < 80) d.scrollIntoView({behavior:"smooth", block:"start"});
+  if(e && e.detail===0) d.focus({preventScroll:true});   // dipilih lewat keyboard: pindahkan fokus ke rincian
+}
+
+// Rincian hanya digambar ulang bila isinya berubah, agar fokus & teks yang sedang dibaca tidak hilang saat scan lain selesai.
+let detailSig = "";
 function renderDetail(){
-  const s = rows.find(x=>x.code===selected);
+  const code = sel[view];
+  const s = code && DATA[code] ? value(DATA[code]) : null;
+  // Pesan gagal hanya berlaku selama data saham itu belum diperbarui (lewat scan apa pun, juga dari tab lain).
+  const msg = detailMsg && detailMsg.code===code && detailMsg.at===DATA[code]?.at ? detailMsg.text : "";
+  // tip memuat periode & batas per tahun buku emiten itu sendiri (bukan hanya kalender Desember di guideExp).
+  const sig = JSON.stringify([view, code, s?.at, A, msg, !!code && inflight.has(code), s && lkInfo(s).tip, guideExp]);
+  if(sig===detailSig) return;
+  detailSig = sig;
   updateGuide(s);
-  if(!s){ $("detail").innerHTML = `<div class="empty">Ketik kode emiten di atas lalu tekan <b>Scan</b>.<br>Hasil valuasinya akan muncul di sini.</div>`; return; }
+  if(!s){
+    $("detail").innerHTML = view==="home"
+      ? `<div class="empty">Ketik kode emiten di atas lalu tekan <b>Scan</b>.<br>Hasil valuasinya akan muncul di sini.</div>`
+      : `<div class="empty">Rincian valuasi muncul di sini setelah ada saham di tabel.</div>`;
+    return;
+  }
+  const lk = lkInfo(s), ratio = s.fair ? s.price/s.fair : null;
   let verdict = "Data belum cukup untuk menghitung nilai wajar.", vcls = "";
   if(s.mos!=null){
     const pct = fmtP(Math.abs(s.mos),1);
     verdict = s.mos>=0
       ? `Harga ${fmtN(s.price)} berada <b>${pct} di bawah</b> nilai wajar ${fmtN(s.fair)}. ${s.status==="buy" ? `Margin of safety sudah memenuhi target ${A.mos}%.` : `Belum memenuhi target MoS ${A.mos}%; harga beli ideal ≤ <b>${fmtN(s.buyAt)}</b>.`}`
+      : s.mos < -1
+      ? `Harga ${fmtN(s.price)} sekitar <b>${fmtN(ratio,1)}× nilai wajar</b> ${fmtN(s.fair)} (MoS ${fmtP(s.mos,1,true)}). Harga beli ideal ≤ <b>${fmtN(s.buyAt)}</b> (MoS ${A.mos}%).`
       : `Harga ${fmtN(s.price)} berada <b>${pct} di atas</b> nilai wajar ${fmtN(s.fair)}. Harga beli ideal ≤ <b>${fmtN(s.buyAt)}</b> (MoS ${A.mos}%).`;
     vcls = s.status==="buy"||s.status==="under" ? "good" : s.status==="over" ? "bad" : "";
     if(s.status==="few") verdict += ` <b>Catatan:</b> baru ${s.n} metode yang bisa dihitung (minimal ${A.minN}), jadi nilai wajar ini belum layak jadi patokan.${s.histPbv===undefined ? " Coba <b>Scan ulang</b> untuk mengambil data metode baru." : ""}`;
     if(s.weak) verdict += ` <b>Hati-hati:</b> ${s.weak==="Rugi" ? "emiten sedang rugi, nilai hanya dari nilai buku." : "ROE di bawah 8%, bisa jadi value trap."}`;
   }
+  if(lk.key==="late" || lk.key==="old") verdict += ` <b>Laporan keuangan:</b> data masih memakai laporan ${lk.q}; laporan ${lk.want} belum masuk, jadi valuasi belum mencerminkan kinerja terbaru.`;
+  if(s.partial?.length) verdict += ` <b>Data belum lengkap:</b> ${esc(s.partial.join(", "))} gagal diambil dari Yahoo, jadi metode yang memakainya tidak dihitung. Coba <b>Scan ulang</b> beberapa saat lagi.`;
+  // Skala dibatasi 3× harga / nilai wajar agar satu metode ekstrem tidak memampatkan yang lain; yang lewat ditandai →.
   const pts = [s.price, ...Object.values(s.vals)].filter(v=>v>0);
-  const max = Math.max(...pts)*1.08, pos = v => (v/max*100).toFixed(2)+"%";
-  // Label metode diselang-seling tingginya agar tidak bertumpuk saat nilainya berdekatan.
+  const max = Math.min(Math.max(...pts), 3*Math.max(s.price, s.fair||0))*1.08;
+  const x = v => Math.min(v, max)/max*100, pos = v => x(v).toFixed(2)+"%";
+  // Label diselang-seling di 3 baris; label yang tetap bertabrakan disembunyikan (nilainya tetap ada di tooltip).
+  const lastAt = [-99, -99, -99];
   const marks = METHODS.filter(m=>s.vals[m.id]!=null && A.on[m.id])
     .sort((a,b)=>s.vals[a.id]-s.vals[b.id])
-    .map((m,i)=>`<div class="m" style="left:${pos(s.vals[m.id])}" title="${m.name}: ${fmtN(s.vals[m.id])}"><span style="top:${-16-12*(i%3)}px">${m.ab}</span></div>`).join("");
-  $("detail").innerHTML = `
-    <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
-      <div><h2 style="margin:0;font-size:18px">${s.code}</h2><div class="sub">${esc(s.name)} · ${esc(s.industry||s.sector)} · Kap. ${fmtCap(s.mcap)}</div></div>
-      <div style="display:flex;gap:8px;align-items:center">${statusBadge(s)}<button data-re="${s.code}">Scan ulang</button></div>
+    .map(m=>{
+      const v = s.vals[m.id], out = v > max, lvl = lastAt.findIndex(p => x(v) - p >= 8);
+      if(lvl >= 0) lastAt[lvl] = x(v);
+      return `<div class="m" style="left:${pos(v)}" title="${m.name}: ${fmtN(v)}${out?" (di luar skala)":""}">${lvl>=0 ? `<span style="top:${-16-12*lvl}px">${m.ab}${out?" →":""}</span>` : ""}</div>`;
+    }).join("");
+  const member = [INDEXES.lq45.codes.includes(s.code) && "LQ45", INDEXES.jii.codes.includes(s.code) && "JII (syariah)"].filter(Boolean)
+    .map(t=>`<span class="tag idx">${t}</span>`).join("");
+  const busy = inflight.has(s.code);
+  setHtml($("detail"), `
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap">
+      <div><h2 style="margin:0;font-size:18px">${s.code}</h2><div class="sub">${member}${esc(s.name)} · ${esc(s.industry||sectorName(s.sector))} · Kap. ${fmtCap(s.mcap)}</div></div>
+      <div style="display:flex;gap:8px;align-items:center">${statusBadge(s)}<button data-re="${s.code}">${busy?"Memindai…":"Scan ulang"}</button></div>
     </div>
+    ${view!=="home" ? `<button class="linkbtn small" data-act="back" style="margin-top:6px">↑ Kembali ke tabel</button>` : ""}
     <div class="big">
       <div><div class="v">${fmtN(s.price)}</div><div class="l">Harga sekarang</div></div>
       <div><div class="v">${fmtN(s.fair)}</div><div class="l">Nilai wajar · ${s.n} metode (${fmtN(s.lo)} – ${fmtN(s.hi)})</div></div>
-      <div><div class="v ${s.mos>0?"pos":s.mos<0?"neg":""}">${fmtP(s.mos,1,true)}</div><div class="l">Margin of safety</div></div>
+      <div><div class="v ${s.mos>0?"pos":s.mos<0?"neg":""}"${mosTitle(s)}>${fmtMos(s.mos)}</div><div class="l">Margin of safety${s.mos < -1 ? ` · harga ${fmtN(ratio,1)}× nilai wajar` : ""}</div></div>
       <div><div class="v">${fmtN(s.buyAt)}</div><div class="l">Harga beli (MoS ${A.mos}%)</div></div>
     </div>
     <div class="verdict ${vcls}">${verdict}</div>
@@ -515,14 +1133,15 @@ function renderDetail(){
       <div>
         <h2 style="margin-top:10px">Per metode (${s.n} dari ${METHODS.length} bisa dihitung)</h2>
         ${METHODS.map(m=>{
-          const v = s.vals[m.id], mm = v ? (v-s.price)/v : null;
-          return `<div class="row" title="${m.desc}" style="${A.on[m.id]?"":"opacity:.45"}"><a href="#m-${m.id}" data-open="${m.id}">${m.name}</a><span>${fmtN(v)} <span class="${mm>0?"pos":mm<0?"neg":"mut"}" style="display:inline-block;min-width:56px;text-align:right">${fmtP(mm,0,true)}</span></span></div>`;
+          const v = s.vals[m.id], mm = v ? (v-s.price)/v : null, on = A.on[m.id];
+          return `<div class="row${on?"":" off"}" title="${m.desc}"><a href="#m-${m.id}" data-open="${m.id}">${m.name}${on?"":" (tidak dipakai)"}</a><span>${fmtN(v)} <span class="${mm>0?"pos":mm<0?"neg":"mut"}" style="display:inline-block;min-width:56px;text-align:right">${fmtMos(mm,0)}</span></span></div>`;
         }).join("")}
       </div>
       <div>
         <h2 style="margin-top:10px">Data dasar</h2>
+        <div class="row" title="${esc(lk.tip)}"><span>Laporan keuangan terakhir</span><span>${lkBadge(s, true)}</span></div>
         <div class="row"><span>PBV / PER</span><span>${fmtX(s.pbv)} / ${fmtX(s.per)}</span></div>
-        <div class="row"><span>EPS ${A.eps==="fwd"&&s.fwdEps?"(forward)":"(TTM)"} / BVPS</span><span>${fmtN(s.epsUsed,1)} / ${fmtN(s.bvps,1)}${s.finCcy!=="IDR"?` <span class="mut">(BV dari ${s.finCcy})</span>`:""}</span></div>
+        <div class="row"><span>EPS ${A.eps==="fwd"&&s.fwdEps?"(forward)":"(TTM)"} / BVPS</span><span>${fmtN(s.epsUsed,1)}${s.epsFromNi && s.epsUsed===s.eps ? ` <span class="mut" title="PER di data Yahoo kosong, jadi EPS dihitung dari laba bersih 12 bulan ÷ jumlah saham">(dari laba bersih)</span>` : ""} / ${fmtN(s.bvps,1)}${s.bvSource ? ` <span class="mut" title="Nilai buku di data Yahoo tidak cocok dengan ekuitas & jumlah sahamnya, jadi BVPS dihitung ulang dari ekuitas per ${fmtD(s.bvSource)}">(neraca ${fmtD(s.bvSource)})</span>` : s.finCcy!=="IDR" ? ` <span class="mut">(BV dari ${s.finCcy})</span>` : ""}</span></div>
         <div class="row"><span>ROE / DER</span><span>${fmtP(s.roe)} / ${s.der!=null?fmtN(s.der/100,2)+"x":"–"}</span></div>
         <div class="row"><span>DPS 12 bln / yield</span><span>${fmtN(s.dps,1)} / ${fmtP(s.dy)}</span></div>
         <div class="row"><span>Tumbuh laba / pendapatan</span><span>${fmtP(s.epsGrowth,0,true)} / ${fmtP(s.revGrowth,0,true)}</span></div>
@@ -532,11 +1151,41 @@ function renderDetail(){
         <div class="row"><span>Rentang 52 minggu</span><span>${fmtN(s.low52)} – ${fmtN(s.high52)}</span></div>
       </div>
     </div>
-    <div class="note">Data diambil ${fmtT(s.at)} dari Yahoo Finance.</div>`;
+    <div class="note">Data diambil ${fmtT(s.at)} dari Yahoo Finance.${msg ? ` <span class="err">${esc(msg)}</span>` : ""}</div>`);
 }
 
-function $(id){ return document.getElementById(id); }
-function esc(s){ return String(s??"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+// ---------- Navigasi menu ----------
+const VIEWS = ["home", ...Object.keys(LISTS)];
+function showView(v){
+  view = v;
+  try{ sessionStorage.setItem(LS.view, v); }catch(e){}
+  // Tiap entri riwayat browser mencatat menunya, agar Back ke "/" atau ke jangkar (#disclaimer) memulihkan menu yang benar.
+  try{ history.replaceState({...(history.state||{}), view:v}, ""); }catch(e){}
+  document.querySelectorAll("[data-panel]").forEach(el=>{ el.hidden = el.dataset.panel !== (v==="home" ? "home" : "list"); });
+  $(v==="home" ? "slot-home" : "slot-list").appendChild($("shared"));
+  document.querySelectorAll(".tabs a").forEach(a=>{
+    if(a.dataset.view===v) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current");
+  });
+  // Tab aktif digeser ke dalam bilah tab yang bisa digulir (layar sempit).
+  const tab = document.querySelector(`.tabs a[data-view="${v}"]`), bar = tab.parentElement;
+  if(tab.offsetLeft < bar.scrollLeft || tab.offsetLeft + tab.offsetWidth > bar.scrollLeft + bar.clientWidth) bar.scrollLeft = tab.offsetLeft - 8;
+  document.title = v==="home" ? "Scanner Nilai Saham" : `${LISTS[v].title} · Scanner Nilai Saham`;
+  sorts.list = {k:"rank", d:1};
+  render();
+  const fromCard = navScroll===v;
+  navScroll = false;
+  if(fromCard){   // dibuka dari kartu Home: tampilkan bagian atas menu, bukan posisi gulir Home
+    const t = document.querySelector(".tabs");
+    if(t.getBoundingClientRect().top < 0) t.scrollIntoView({block:"start"});
+  }
+  if(v!=="home") ensureList(v);
+}
+function viewFromHash(){
+  const h = location.hash.slice(1);
+  if(VIEWS.includes(h)) return h;
+  try{ const s = sessionStorage.getItem(LS.view); if(VIEWS.includes(s)) return s; }catch(e){}
+  return "home";
+}
 
 function syncInputs(){
   $("a-r").value=A.r; $("a-g").value=A.g; $("a-gh").value=A.gh; $("a-y").value=A.y; $("a-pe").value=A.pe;
@@ -545,16 +1194,92 @@ function syncInputs(){
 }
 
 function init(){
+  loadStore();
+  sel.home = HIST[0] || null;
   if(location.protocol==="file:"){
     $("queue").innerHTML = `<div class="err">Halaman ini perlu server scan. Buka lewat <b>jalankan.bat</b> (alamat http://localhost:8765), bukan dengan klik dua kali file HTML.</div>`;
   }
   syncInputs();
   buildGuide();
+
+  window.addEventListener("hashchange", ()=>{
+    const h = location.hash.slice(1), v = history.state?.view;
+    if(VIEWS.includes(h)) return showView(h);
+    if(!h) return showView(v || "home");
+    // Jangkar biasa (#disclaimer, #panduan, #m-…): pulihkan menu yang tercatat di entri ini, atau catat menu sekarang.
+    if(v && v!==view) showView(v);
+    else try{ history.replaceState({...(history.state||{}), view}, ""); }catch(e){}
+    if(h.startsWith("m-")) openMethod(h.slice(2));
+  });
   document.addEventListener("click", e=>{ const id = e.target.closest("[data-open]")?.dataset.open; if(id) openMethod(id); });
-  if(location.hash.startsWith("#m-")) openMethod(location.hash.slice(3));
-  $("form").onsubmit = e => { e.preventDefault(); const c = parseCodes($("code").value); $("code").value = ""; scan(c); };
-  document.querySelector(".chips").onclick = e => { const c = e.target.dataset.c; if(c) scan(parseCodes(c)); };
+  document.addEventListener("pointerdown", ()=>{ pointerHeld = Date.now(); }, true);
+  ["pointerup","pointercancel"].forEach(t=>document.addEventListener(t, ()=>{
+    pointerHeld = 0;
+    if(renderTimer===-1){ renderTimer = 0; scheduleRender(); }
+  }, true));
+  // Tab lain menyimpan hasil scan / riwayat: ikut perbarui tampilan di tab ini.
+  window.addEventListener("storage", e=>{
+    if(e.key===LS.data && mergeData(readJSON(LS.data, {}))) scheduleRender();
+    if(e.key===LS.hist){
+      const h = readJSON(LS.hist, null);
+      if(Array.isArray(h)){ HIST = h; if(sel.home && !HIST.includes(sel.home)) sel.home = HIST[0] || null; scheduleRender(); }
+    }
+  });
+
+  // Home
+  $("form").onsubmit = e => {
+    e.preventDefault();
+    const all = parseCodes($("code").value), c = all.slice(0, MAX_CODES);
+    queueNote = all.length > MAX_CODES ? `Hanya ${MAX_CODES} kode pertama yang discan (${all.length-MAX_CODES} kode diabaikan).` : "";
+    $("code").value = "";
+    scanManual(c);
+  };
+  document.querySelector(".chips").onclick = e => { const c = e.target.dataset.c; if(c){ queueNote = ""; scanManual(parseCodes(c)); } };
   $("queue").onclick = e => { const c = e.target.dataset.x; if(c){ delete Q[c]; renderQueue(); }};
+  // Ctrl/Shift/Cmd/Alt-klik membuka tab/jendela baru: tab ini tidak berpindah menu.
+  $("cards").addEventListener("click", e=>{
+    const a = e.target.closest("a.card");
+    if(a && e.button===0 && !(e.ctrlKey||e.metaKey||e.shiftKey||e.altKey)) navScroll = a.dataset.card;
+  });
+  $("hist-head").onclick = e=>{ const k=e.target.closest("th[data-k]")?.dataset.k; if(!k) return; sorts.hist = {k, d: sorts.hist.k===k ? -sorts.hist.d : (k==="code"?1:-1)}; render(); };
+  $("hist-body").onclick = e=>{
+    const del = e.target.closest("[data-del]")?.dataset.del;
+    if(del){ saveHist(h => h.filter(c=>c!==del)); if(sel.home===del) sel.home = HIST[0] || null; render(); return; }
+    const c = e.target.closest("tr")?.dataset.c;
+    if(c){ sel.home = c; render(); revealDetail(e); }
+  };
+  $("rescan").onclick = ()=>{ queueNote = ""; scanManual([...HIST]); };
+  $("clear").onclick = ()=>{ if(confirm("Hapus semua riwayat scan?")){ saveHist(() => []); sel.home = null; render(); }};
+
+  // Menu Top 20
+  $("list-rank").onchange = e=>{ PREF[view].rank = e.target.value; savePref(); sorts.list = {k:"rank", d:1}; picked[view] = false; render(); };
+  $("list-incl").onchange = e=>{ PREF[view].incl = e.target.checked; savePref(); render(); };
+  $("list-fresh").onchange = e=>{ PREF[view].fresh = e.target.checked; savePref(); render(); };
+  $("list-refresh").onclick = ()=>ensureList(view, {force:true});
+  $("list-more").onclick = ()=>{ PREF[view].all = !PREF[view].all; savePref(); render(); };
+  // Tombol Coba lagi hilang saat pemindaian ulang dimulai: fokus keyboard dipindah ke Perbarui data.
+  $("list-prog").onclick = e=>{ if(e.target.closest("[data-act=retry]")){ ensureList(view, {only:Object.keys(LP[view].failed)}); $("list-refresh").focus(); } };
+  $("list-head").onclick = e=>{ const k=e.target.closest("th[data-k]")?.dataset.k; if(!k) return; sorts.list = {k, d: sorts.list.k===k ? -sorts.list.d : (k==="code"||k==="sector"||k==="rank"?1:-1)}; render(); };
+  $("list-body").onclick = e=>{ const c = e.target.closest("tr")?.dataset.c; if(c){ sel[view] = c; picked[view] = true; render(); revealDetail(e); } };
+
+  // Rincian & asumsi
+  $("detail").onclick = e=>{
+    if(e.target.closest("[data-act=back]")){
+      // Fokus ikut kembali ke baris terpilih (atau panel menu bila baris itu tidak tampil), agar Tab berikutnya tidak
+      // melompat lagi ke rincian.
+      const b = $("list-body").querySelector("tr.sel button.code");
+      (b || $("list-panel")).focus({preventScroll:true});
+      $("list-panel").scrollIntoView({behavior:"smooth", block:"start"});
+      return;
+    }
+    const c = e.target.closest("[data-re]")?.dataset.re;
+    if(!c) return;
+    if(detailMsg?.code===c) detailMsg = null;
+    const p = fetchStock(c, {urgent:true});
+    render();
+    p.catch(err=>{ detailMsg = {code:c, at:DATA[c]?.at, text:`Scan ulang ${c} gagal: ${err.message}`}; })
+     .finally(()=>pointerHeld ? scheduleRender() : render());
+  };
   const num = (id,key)=>$(id).addEventListener("input",e=>{ const v=parseFloat(e.target.value); if(isFinite(v)){ A[key]=v; saveA(); render(); }});
   num("a-r","r"); num("a-g","g"); num("a-gh","gh"); num("a-y","y"); num("a-pe","pe");
   num("a-evm","evm"); num("a-mos","mos"); num("a-min","minN");
@@ -562,17 +1287,10 @@ function init(){
   $("a-agg").onchange = e=>{ A.agg=e.target.value; saveA(); render(); };
   $("methods").onchange = e=>{ const m=e.target.dataset.m; if(m){ A.on[m]=e.target.checked; saveA(); render(); }};
   $("reset").onclick = ()=>{ A = structuredClone(DEFAULTS); saveA(); syncInputs(); render(); };
-  $("thead").onclick = e=>{ const k=e.target.closest("th")?.dataset.k; if(!k) return; sortDir = sortKey===k ? -sortDir : (k==="code"?1:-1); sortKey=k; render(); };
-  $("tbody").onclick = e=>{
-    const del = e.target.dataset.del;
-    if(del){ delete S[del]; if(selected===del) selected=null; saveS(); render(); return; }
-    const c = e.target.closest("tr")?.dataset.c;
-    if(c){ selected=c; render(); if(innerWidth<900) $("detail").scrollIntoView({behavior:"smooth"}); }
-  };
-  $("detail").onclick = e=>{ const c=e.target.dataset.re; if(c) scan([c]); };
-  $("rescan").onclick = ()=>scan(Object.keys(S));
-  $("clear").onclick = ()=>{ if(confirm("Hapus semua riwayat scan?")){ S={}; selected=null; saveS(); render(); }};
-  render();
+
+  const h0 = location.hash.slice(1);
+  showView(VIEWS.includes(h0) || !history.state?.view ? viewFromHash() : history.state.view);
+  if(h0.startsWith("m-")) openMethod(h0.slice(2));
 }
 init();
 </script>
