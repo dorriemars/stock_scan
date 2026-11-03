@@ -1092,7 +1092,11 @@ function renderDetail(){
     if(s.weak) verdict += ` <b>Hati-hati:</b> ${s.weak==="Rugi" ? "emiten sedang rugi, nilai hanya dari nilai buku." : "ROE di bawah 8%, bisa jadi value trap."}`;
   }
   if(lk.key==="late" || lk.key==="old") verdict += ` <b>Laporan keuangan:</b> data masih memakai laporan ${lk.q}; laporan ${lk.want} belum masuk, jadi valuasi belum mencerminkan kinerja terbaru.`;
-  if(s.partial?.length) verdict += ` <b>Data belum lengkap:</b> ${esc(s.partial.join(", "))} gagal diambil dari Yahoo, jadi metode yang memakainya tidak dihitung. Coba <b>Scan ulang</b> beberapa saat lagi.`;
+  // Neraca kuartal yang gagal tidak menggugurkan metode: nilai buku memakai neraca tahunan / bookValue Yahoo.
+  const lost = (s.partial||[]).filter(p => p!=="neraca kuartal");
+  const why = [lost.length && `${lost.join(", ")} gagal diambil dari Yahoo, jadi metode yang memakainya tidak dihitung`,
+    s.partial?.includes("neraca kuartal") && "neraca kuartal gagal diambil, jadi nilai buku memakai data yang kurang mutakhir"].filter(Boolean);
+  if(why.length) verdict += ` <b>Data belum lengkap:</b> ${esc(why.join("; "))}. Coba <b>Scan ulang</b> beberapa saat lagi.`;
   // Skala dibatasi 3× harga / nilai wajar agar satu metode ekstrem tidak memampatkan yang lain; yang lewat ditandai →.
   const pts = [s.price, ...Object.values(s.vals)].filter(v=>v>0);
   const max = Math.min(Math.max(...pts), 3*Math.max(s.price, s.fair||0))*1.08;

@@ -205,7 +205,9 @@ def pick_bvps(t, i: dict, fx: float, fin_ccy: str, shares, splits, partial: list
     bv = book_value * fx if book_value is not None else None
     rounded = fin_ccy != "IDR" and book_value is not None and 0 < book_value < 0.05  # galat pembulatan > 1%
     mrq = utc_dt(i.get("mostRecentQuarter"))
-    since = utc_dt(i.get("firstTradeDateMilliseconds"), 1000)  # tanggal IPO
+    # Tanggal IPO. firstTradeDateMilliseconds datang dari permintaan v7 yang galatnya ditelan yfinance; cadangannya dari
+    # quoteSummary.
+    since = utc_dt(i.get("firstTradeDateMilliseconds"), 1000) or utc_dt(i.get("firstTradeDateEpochUtc"))
 
     @functools.cache
     def quarterly():
@@ -220,25 +222,33 @@ def pick_bvps(t, i: dict, fx: float, fin_ccy: str, shares, splits, partial: list
                 partial.append("neraca kuartal")
         return latest_sheet(qbs, fx, since, splits, shares)
 
-    annual = latest_sheet(t.balance_sheet, fx, since, splits, shares)
+    # Neraca tahunan gagal diambil / tidak ada: neraca kuartal jadi pembanding, agar bookValue tetap diperiksa.
+    annual = latest_sheet(t.balance_sheet, fx, since, splits, shares) or quarterly()
     td, de = num(i.get("totalDebt")), num(i.get("debtToEquity"))
     # Ekuitas total (termasuk nonpengendali) per mrq menurut Yahoo sendiri: total utang ÷ DER. DER dalam persen dengan
     # 3 desimal, jadi di bawah 1% galat pembulatannya terlalu besar. mrq sebelum IPO: ekuitasnya belum memuat dana IPO.
     equity = td * 100 / de if td and de and de >= 1 and shares and mrq and not (since and since > mrq) else None
 
     def reference(s):
-        """Pembanding BVPS per mrq dari ekuitas Yahoo & neraca s -> (nilai, toleransi, tanggal) atau None."""
+        """Pembanding BVPS per mrq dari ekuitas Yahoo & neraca s -> (nilai, toleransi, tanggal, porsi nonpengendali)
+        atau None. Porsi nonpengendali None = neraca kuartal yang sama (angka persis), selain itu estimasi."""
         if not equity or s is None or not s.equity or s.equity <= 0:
             return None
         if s.bvps and s.date >= mrq:  # neraca kuartal yang sama: angka persis
-            return s.bvps, 0.05, s.date
-        # Jumlah saham sekarang, kecuali berbeda lebih dari 3x dengan neraca (lebih mungkin keliru, MKNT).
-        n = shares if 1 / 3 <= shares / s.shares <= 3 else s.shares
+            return s.bvps, 0.05, s.date, None
+        # Jumlah saham sekarang. Berbeda lebih dari 3x dengan neraca: salah satunya keliru (MKNT) atau ada konversi /
+        # rights issue besar (BNBR 2023), jadi pakai yang cocok dengan bookValue; tanpa bookValue, jumlah di neraca.
+        n = shares
+        if not 1 / 3 <= shares / s.shares <= 3:
+            n = s.shares
+            if bv and bv > 0 and equity > s.mi:
+                n = min((shares, s.shares), key=lambda k: abs(math.log((equity - s.mi) * fx / k / bv)))
         est = (equity - s.mi) * fx / n  # kepentingan nonpengendali dari neraca yang mungkin lebih lama
-        return (est, 0.05 + 0.1 * abs(s.mi) / s.equity, mrq) if est > 0 else None
+        mi = abs(s.mi) / s.equity
+        return (est, 0.05 + 0.1 * mi, mrq, mi) if est > 0 else None
 
-    def near(x, ref):
-        return x is not None and abs(x / ref[0] - 1) <= ref[1]
+    def near(x, ref, tol=None):
+        return x is not None and abs(x / ref[0] - 1) <= (ref[1] if tol is None else tol)
 
     ref = reference(annual)
     if ref and not rounded and near(bv, ref):
@@ -246,9 +256,19 @@ def pick_bvps(t, i: dict, fx: float, fin_ccy: str, shares, splits, partial: list
     if equity and annual:
         ref = reference(quarterly()) or ref  # neraca kuartal: nonpengendali lebih baru
         if ref:
-            if not rounded and near(bv, ref):
+            est = ref[3] is not None
+            # Nonpengendali bisa berubah sebesar nilainya sendiri dalam satu kuartal (pembelian saham minoritas, akuisisi):
+            # bookValue di dalam rentang itu tetap dipakai, dibatasi ±40% agar salah 2x (pemecahan saham) tetap ditolak.
+            if not rounded and (near(bv, ref) or est and near(bv, ref, min(0.05 + ref[3], 0.4))):
                 return bv, None
-            return ref[0], ref[2].date().isoformat()
+            val = ref[0]
+            if rounded and est:
+                # bookValue terbulatkan tetap ekuitas per saham per mrq menurut Yahoo: estimasi dijepit ke rentang
+                # pembulatannya, kecuali meleset lebih dari 2x (bookValue keliru, ENRG).
+                lo, hi = (book_value - 0.0005) * fx, (book_value + 0.0005) * fx
+                if lo / 2 <= val <= hi * 2:
+                    val = min(max(val, lo), hi)
+            return val, ref[2].date().isoformat()
 
     # Tanpa pembanding ekuitas Yahoo: bookValue dipakai kecuali tidak cocok dengan neraca tahunan.
     f = split_factor(splits, mrq) if mrq else 1.0
@@ -464,11 +484,12 @@ def scan(raw_code: str) -> tuple[int, dict]:
     except NotFound as e:
         return 404, {"error": str(e)}
     except Exception as e:
+        # Respons gagal bisa tersimpan di memo yfinance (juga bila kegagalan itu disusul rate limit); tanpa dibuang,
+        # percobaan ulang hanya mengulang kegagalannya.
+        clear_request_memo()
         if is_rate_limit(e):
             return 429, {"error": "Yahoo Finance sedang membatasi permintaan (rate limit). Coba lagi beberapa saat lagi.",
                          "retryable": True}
-        # Respons gagal bisa tersimpan di memo yfinance; tanpa dibuang, percobaan ulang hanya mengulang kegagalannya.
-        clear_request_memo()
         return 502, {"error": f"Gagal mengambil data {code}: {e}", "retryable": True}
     if not stock["partial"]:
         _cache[code] = (time.time(), stock)
