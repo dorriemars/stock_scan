@@ -601,7 +601,9 @@ async function requestStock(code){
 // Gelombang 429 / gangguan jaringan berikutnya menggandakan jeda (10, 20, 40, 60 detik). Mulai gelombang ke-3,
 // sisa antrean dihentikan agar tidak terus membebani Yahoo. Kembalikan true bila antrean dihentikan.
 function throttled(job, message, net){
-  if(job.startedAt >= pauseSetAt){   // permintaan yang dikirim sebelum jeda terakhir = gelombang yang sama
+  // Permintaan yang dikirim sebelum jeda terakhir (juga pada milidetik yang sama) = gelombang yang sama. Selama jeda
+  // tidak ada permintaan baru, jadi gelombang berikutnya selalu dimulai sesudah pauseSetAt.
+  if(job.startedAt > pauseSetAt){
     strikes++;
     pauseSetAt = Date.now();
     pauseUntil = pauseSetAt + Math.min(60000, 10000 * 2**(strikes-1)) + Math.random()*2000;
@@ -951,10 +953,13 @@ function failureGroups(failed){
     `${esc(m)} <span class="mut">(${cs.length} saham: ${cs.slice(0,12).map(esc).join(", ")}${cs.length>12?", …":""})</span>`);
 }
 
+let listDescHtml = "";
 function renderList(){
   const key = view, L = LISTS[key], P = PREF[key], R = rankList(key), st = LP[key];
   $("list-title").textContent = L.title;
-  $("list-desc").innerHTML = listDesc(key, R.mode);
+  // Ditulis ulang hanya bila berubah: render berkala saat scan tidak boleh membuang fokus dari tautan sumber indeks.
+  const desc = listDesc(key, R.mode);
+  if(desc !== listDescHtml) $("list-desc").innerHTML = listDescHtml = desc;
   $("list-rank-wrap").hidden = L.ranks.length < 2;
   $("list-rank").value = R.mode;
   $("list-incl-wrap").hidden = R.mode !== "mos";
@@ -1273,15 +1278,18 @@ function init(){
       // melompat lagi ke rincian.
       const b = $("list-body").querySelector("tr.sel button.code");
       (b || $("list-panel")).focus({preventScroll:true});
-      $("list-panel").scrollIntoView({behavior:"smooth", block:"start"});
+      // Ke atas panel bila baris itu tetap terlihat; baris yang lebih jauh ke bawah dibawa ke tengah layar.
+      const far = b && b.getBoundingClientRect().bottom - $("list-panel").getBoundingClientRect().top > innerHeight;
+      (far ? b.closest("tr") : $("list-panel")).scrollIntoView({behavior:"smooth", block: far ? "center" : "start"});
       return;
     }
     const c = e.target.closest("[data-re]")?.dataset.re;
     if(!c) return;
     if(detailMsg?.code===c) detailMsg = null;
-    const p = fetchStock(c, {urgent:true});
+    // Waktu data saat scan ulang dimulai: data yang diperbarui tab lain selama percobaan ulang menyembunyikan pesannya.
+    const at0 = DATA[c]?.at, p = fetchStock(c, {urgent:true});
     render();
-    p.catch(err=>{ detailMsg = {code:c, at:DATA[c]?.at, text:`Scan ulang ${c} gagal: ${err.message}`}; })
+    p.catch(err=>{ detailMsg = {code:c, at:at0, text:`Scan ulang ${c} gagal: ${err.message}`}; })
      .finally(()=>pointerHeld ? scheduleRender() : render());
   };
   const num = (id,key)=>$(id).addEventListener("input",e=>{ const v=parseFloat(e.target.value); if(isFinite(v)){ A[key]=v; saveA(); render(); }});
