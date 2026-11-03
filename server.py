@@ -1,4 +1,4 @@
-"""Server lokal: menyajikan app/index.html dan endpoint /api/scan.
+"""Server lokal: menyajikan app/public/index.html dan endpoint /api/scan.
 
 Pemakaian:
     .venv\\Scripts\\python.exe server.py              # buka http://localhost:8765
@@ -22,7 +22,7 @@ HOST, PORT = "127.0.0.1", 8765
 
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=str(APP), **kwargs)
+        super().__init__(*args, directory=str(APP / "public"), **kwargs)
 
     def do_GET(self):
         url = urlparse(self.path)
@@ -37,7 +37,7 @@ class Handler(SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
         elif url.path.startswith("/api/"):
-            self.send_error(404)  # jangan sajikan source code API
+            self.send_error(404)
         else:
             super().do_GET()
 

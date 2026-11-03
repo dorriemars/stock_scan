@@ -193,15 +193,30 @@ def scan(raw_code: str) -> tuple[int, dict]:
     return 200, {"stock": stock, "cached": False}
 
 
+INDEX_HTML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "public", "index.html")
+
+
 class handler(BaseHTTPRequestHandler):
+    """Entrypoint Vercel: /api/scan -> JSON; / -> halaman (cadangan bila public/ tidak disajikan CDN)."""
+
     def do_GET(self):
-        code = parse_qs(urlparse(self.path).query).get("code", [""])[0]
-        status, payload = scan(code)
-        body = json.dumps(payload).encode()
+        url = urlparse(self.path)
+        if url.path.rstrip("/") == "/api/scan":
+            code = parse_qs(url.query).get("code", [""])[0]
+            status, payload = scan(code)
+            body = json.dumps(payload).encode()
+            self._send(status, body, "application/json",
+                       f"public, s-maxage={CACHE_TTL}" if status == 200 else "no-store")
+        elif url.path in ("/", "/index.html"):
+            with open(INDEX_HTML, "rb") as f:
+                self._send(200, f.read(), "text/html; charset=utf-8", "no-cache")
+        else:
+            self._send(404, b'{"error": "Tidak ditemukan"}', "application/json", "no-store")
+
+    def _send(self, status, body, content_type, cache):
         self.send_response(status)
-        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
-        if status == 200:
-            self.send_header("Cache-Control", f"public, s-maxage={CACHE_TTL}")
+        self.send_header("Cache-Control", cache)
         self.end_headers()
         self.wfile.write(body)

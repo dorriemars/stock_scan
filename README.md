@@ -6,8 +6,8 @@ Ketik kode emiten (mis. `BBRI` atau `BBRI, TLKM, ASII`), lalu data fundamental d
 
 ## Struktur
 
-- `app/index.html`: halaman scanner
-- `app/api/scan.py`: endpoint `GET /api/scan?code=BBRI` (serverless function di Vercel)
+- `app/public/index.html`: halaman scanner
+- `app/api/scan.py`: endpoint `GET /api/scan?code=BBRI`; di Vercel menjadi entrypoint Python (`app/pyproject.toml`)
 - `server.py`: server lokal untuk halaman + API
 
 ## Jalankan lokal
