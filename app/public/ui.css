@@ -1,45 +1,306 @@
-/* Warna dan bilah atas yang dipakai bersama versi Pro (index.html) dan versi Lite (lite.html),
-   supaya kedua halaman punya tema terang/gelap dan tombol ganti versi yang sama persis. */
+/* Warna, bentuk, dan komponen dasar yang dipakai bersama versi Pro (index.html) dan versi Lite (lite.html),
+   supaya kedua halaman punya tema terang/gelap, tombol ganti versi, dan bentuk tombol/pil yang sama persis.
+
+   Tampilan gelap adalah wajah utamanya: latar hampir hitam bersemu hijau dingin, kartu hanya satu tingkat lebih
+   terang, dan pemisahnya garis rambut 1px — bukan lompatan terang. Tampilan terang bukan sisa-sisa: hue-nya sama,
+   hanya arah terangnya dibalik, dan aksen mint diganti cemara gelap karena mint di atas putih tidak terbaca.
+
+   Dua jenis garis, dan bedanya penting:
+     --line    garis rambut dekoratif (tepi kartu, baris tabel, pemisah). Sengaja hampir tak terlihat; itulah
+               tampilannya. Tidak pernah menjadi satu-satunya penanda sebuah kontrol atau keadaan.
+     --line-2  batas yang wajib terlihat (>= 3:1) untuk kolom isian, tombol, chip, rel segmen, tepi kolom beku,
+               dan tepi luar setiap rel bar. Di sinilah WCAG 1.4.11 benar-benar dipenuhi.
+
+   Dua hijau, dan bedanya juga penting:
+     --accent  yang bisa ditekan: tombol utama, tautan, cincin fokus, isian .progress, palang baris terpilih.
+               Tidak pernah dipakai sebagai angka atau label yang hanya dibaca.
+               Ditambah tiga tanda tetap yang bukan kontrol: kotak merek di bilah atas, titik .sechead,
+               dan titik di pita atas.
+     --good    semua keterangan yang dibaca: angka diskon, pil berlabel kata, penanda nilai wajar, putusan.
+   Keduanya hijau, jadi perbedaannya tidak boleh bergantung pada warna: bentuk dan peran di ataslah yang
+   membedakannya, dan setiap pil selalu memuat katanya sendiri. */
+
 :root{
   color-scheme:light dark;
-  --bg:#f6f7f9; --panel:#ffffff; --ink:#15181d; --muted:#5f6773; --line:#e3e6ea;
-  --accent:#2457d6; --accent-ink:#ffffff; --good:#0e6b3c; --good-bg:#e3f4ea; --warn:#8a5200; --warn-bg:#fdf1dc;
-  --bad:#c0362c; --bad-bg:#fbe6e4; --neutral-bg:#eef0f3; --bar:#d7dbe1;
+
+  /* Sudut, jarak, dan huruf. Tidak ada webfont: halaman ini harus jalan offline, jadi kesan "display"
+     dibuat dari tebal huruf, spasi antarhuruf, dan huruf kapital kecil saja. */
+  --r-xs:5px; --r-sm:10px; --r-md:12px; --r-lg:14px; --r-pill:999px;
+  --sp-4:16px;
+  --font-ui:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono-num:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --font-size:14px; --font-line:1.5;
+
+  /* ---- Tema terang (bawaan) ---- */
+  --bg:#f2f6f1; --bg-2:#e9eee8; --panel:#ffffff; --panel-2:#ecf2ea;
+  --ink:#121712; --ink-2:#3e483e; --muted:#566056;
+  --line:#dde4df; --line-2:#78837c; --bar:#dfe6dd;
+  --accent:#04584a; --accent-ink:#ffffff; --accent-soft:#daf1e9;
+  --good:#166a37; --good-bg:#ddf2e2; --good-line:#4a8c66;
+  --warn:#7a4e06; --warn-bg:#fbefd6; --warn-line:#a5833f;
+  --bad:#b9281f; --bad-bg:#fce7e4; --bad-line:#b4645a;
+  --neutral-bg:#edf2ec;
 }
 :root[data-theme="light"]{color-scheme:light}
+
+/* ---- Tema gelap ----
+   Dua blok dengan isi sama persis: satu mengikuti perangkat, satu untuk pilihan "gelap" yang eksplisit.
+   Penjaga :not([data-theme="light"]) wajib ada — tanpa itu, memilih "terang" di perangkat bertema gelap
+   tidak akan menimpa apa pun. cycleTheme() di engine.js yang menulis atribut data-theme ini. */
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#0f1115; --panel:#171a20; --ink:#e8eaee; --muted:#9aa2ae; --line:#272c35;
-    --accent:#7ea2ff; --accent-ink:#0f1115; --good:#4cc68a; --good-bg:#14301f; --warn:#f0b14a; --warn-bg:#33270f;
-    --bad:#ff7b70; --bad-bg:#3a1a18; --neutral-bg:#222731; --bar:#323946;
+    --bg:#0a0e0c; --bg-2:#0e1311; --panel:#121713; --panel-2:#1a201b;
+    --ink:#e8efe8; --ink-2:#c3cdc4; --muted:#9fac9f;
+    --line:#2a332d; --line-2:#6b7d72; --bar:#28302a;
+    --accent:#7cefbb; --accent-ink:#04120d; --accent-soft:#10362a;
+    --good:#54d483; --good-bg:#11291c; --good-line:#3f8560;
+    --warn:#f0bf52; --warn-bg:#2f2512; --warn-line:#856c31;
+    --bad:#ff6b6b; --bad-bg:#351a19; --bad-line:#a2524b;
+    --neutral-bg:#1c221d;
   }
 }
 :root[data-theme="dark"]{
   color-scheme:dark;
-  --bg:#0f1115; --panel:#171a20; --ink:#e8eaee; --muted:#9aa2ae; --line:#272c35;
-  --accent:#7ea2ff; --accent-ink:#0f1115; --good:#4cc68a; --good-bg:#14301f; --warn:#f0b14a; --warn-bg:#33270f;
-  --bad:#ff7b70; --bad-bg:#3a1a18; --neutral-bg:#222731; --bar:#323946;
+  --bg:#0a0e0c; --bg-2:#0e1311; --panel:#121713; --panel-2:#1a201b;
+  --ink:#e8efe8; --ink-2:#c3cdc4; --muted:#9fac9f;
+  --line:#2a332d; --line-2:#6b7d72; --bar:#28302a;
+  --accent:#7cefbb; --accent-ink:#04120d; --accent-soft:#10362a;
+  --good:#54d483; --good-bg:#11291c; --good-line:#3f8560;
+  --warn:#f0bf52; --warn-bg:#2f2512; --warn-line:#856c31;
+  --bad:#ff6b6b; --bad-bg:#351a19; --bad-line:#a2524b;
+  --neutral-bg:#1c221d;
 }
 
-/* Bilah atas: judul di kiri, tombol Lite/Pro dan tombol tema di pojok kanan atas. */
-.topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px 16px;flex-wrap:wrap}
-.topbar .brand{min-width:0;flex:1 1 260px}
-.topright{display:flex;align-items:center;gap:8px;flex:none;margin-left:auto}
-.verswitch{display:flex;background:var(--neutral-bg);border:1px solid var(--line);border-radius:999px;padding:2px}
-/* Sisi yang sedang aktif bukan tautan: mengkliknya hanya akan memuat ulang halaman dan membuang hash (#kode / #mos). */
-.verswitch a,.verswitch .cur{
-  display:block;padding:5px 14px;border-radius:999px;font-size:13px;font-weight:600;line-height:1.3;
+/* ================= Dasar halaman ================= */
+*{box-sizing:border-box}
+/* Wajib ada: sembilan elemen disembunyikan lewat el.hidden dari JS, dan beberapa di antaranya punya
+   display:flex/grid dari kelasnya sendiri yang akan mengalahkan [hidden] bawaan peramban. */
+[hidden]{display:none !important}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font:var(--font-size)/var(--font-line) var(--font-ui);
+  -webkit-font-smoothing:antialiased;
+}
+/* max-width-nya beda di tiap halaman (720px Lite / 1300px Pro), jadi hanya itu yang ditimpa di sana. */
+.wrap{margin:0 auto;padding:16px 16px 64px}
+h1{font-size:17px;font-weight:700;letter-spacing:-.01em;margin:0}
+h2{font-size:14px;margin:0 0 10px}
+a{color:var(--accent);text-underline-offset:2px}
+.sub{color:var(--muted);font-size:12.5px}
+.small{font-size:12px}
+.mut{color:var(--muted)}
+.pos{color:var(--good)}
+.neg{color:var(--bad)}
+.lead{margin:14px 0 0;font-size:13px;color:var(--muted)}
+/* Angka selalu rata lebar: kolom Rupiah tidak boleh bergoyang saat diperbarui tiap 250 ms. */
+.num{font-family:var(--mono-num);font-variant-numeric:tabular-nums}
+/* Disembunyikan dari mata, tetap dibaca pembaca layar. Jangan diganti display:none / visibility:hidden:
+   #live, #home-live, dan #list-live memakai kelas ini untuk mengumumkan kemajuan pemindaian. */
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* Satu aturan fokus untuk kedua halaman. Sebelumnya hanya Lite yang punya aturan global, sehingga di Pro
+   sebagian besar tombol hanya mengandalkan cincin bawaan peramban. Sengaja outline saja, tanpa box-shadow:
+   beberapa keadaan terpilih (.rowbtn.sel, tr.sel .stick, .verdict) memakai inset box-shadow sebagai palang
+   tepi kiri, dan halo fokus akan menimpanya persis saat baris itu difokuskan. */
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms !important;transition-duration:.01ms !important}
+  /* Pemintal tetap berputar, hanya pelan: ia satu-satunya tanda bahwa permintaan masih berjalan. */
+  .spin{animation-duration:2.4s !important}
+}
+
+/* ================= Tombol ================= */
+/* Semua tombol yang dibuat JS (.chip, .del, .thbtn, .code, .rowbtn, [data-re], [data-act], #list-retry)
+   hanya menulis kelas pengubahnya, tidak pernah kelas dasar — jadi tampilan dasarnya harus tetap menempel
+   pada pemilih elemen `button`, bukan pada sebuah kelas .btn. */
+button{
+  font:inherit;font-size:13px;font-weight:600;line-height:1.2;color:var(--ink);
+  background:var(--panel-2);border:1px solid var(--line-2);border-radius:var(--r-pill);
+  padding:7px 14px;cursor:pointer;
+  transition:background .12s,border-color .12s,color .12s;
+}
+/* Hover tidak lagi memakai --accent: di bahasa warna yang baru, aksen berarti "terpilih / aksi utama". */
+button:hover{background:var(--neutral-bg);border-color:var(--ink-2);color:var(--ink)}
+button:disabled,button[aria-disabled="true"]{opacity:.45;cursor:default}
+button:disabled:hover,button[aria-disabled="true"]:hover{background:var(--panel-2);border-color:var(--line-2)}
+.btn-ghost{background:none;border-color:transparent}
+.btn-ghost:hover{background:var(--panel-2);border-color:var(--line-2)}
+.btn-icon{width:26px;height:26px;padding:0;display:inline-grid;place-items:center;font-size:14px;flex:none}
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);font-weight:600;font-size:12px}
+.linkbtn:hover{background:none;border-color:transparent;text-decoration:underline}
+
+/* ================= Kolom isian ================= */
+input,select,textarea{
+  font:inherit;color:var(--ink);background:var(--bg-2);
+  border:1px solid var(--line-2);border-radius:var(--r-sm);padding:8px 10px;
+  accent-color:var(--accent);
+}
+:is(input,select):hover{border-color:var(--ink-2)}
+:is(input,select):focus{border-color:var(--accent);background:var(--panel)}
+input[type=number]{width:100%;font-family:var(--mono-num)}
+input[type=checkbox]{width:auto}
+/* iOS Safari memperbesar halaman bila kolom isian < 16px mendapat fokus. */
+@media(max-width:600px){input,select,textarea{font-size:16px}}
+
+/* Kotak cari: satu-satunya komponen besar yang dipakai kedua halaman, jadi bentuknya disamakan di sini
+   agar tidak pelan-pelan berbeda lagi seperti sebelumnya (17px vs 18px, 11px vs 10px). */
+.search form{display:flex;gap:8px;align-items:center}
+.search input{
+  flex:1;min-width:0;height:48px;padding:0 18px;border-radius:var(--r-pill);
+  font-size:16px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+}
+.search input::placeholder{letter-spacing:.02em;font-weight:500;color:var(--muted);text-transform:none}
+.search button[type=submit]{
+  height:48px;padding:0 24px;border-radius:var(--r-pill);
+  background:var(--accent);color:var(--accent-ink);border-color:var(--accent);
+  font-size:15px;font-weight:700;flex:none;
+}
+.search button[type=submit]:hover{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);filter:brightness(1.07)}
+
+/* ================= Permukaan ================= */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-4)}
+
+/* ================= Kelompok pil (segmen) =================
+   Satu komponen untuk tombol Lite/Pro di bilah atas dan untuk keempat tab di versi Pro.
+   Catatan untuk .tabs: anchor-nya WAJIB tetap anak langsung .tabs dan .tabs harus position:relative —
+   showView() di index.html menghitung tab.offsetLeft terhadap tab.parentElement untuk menggeser tab aktif
+   ke dalam layar sempit. Membungkus anchor di dalam div flex akan mematikan penggeseran itu diam-diam. */
+.verswitch,.tabs{
+  position:relative;display:flex;gap:4px;padding:3px;
+  background:var(--bg-2);border:1px solid var(--line-2);border-radius:var(--r-pill);
+  width:fit-content;max-width:100%;
+}
+.verswitch a,.verswitch .cur,.tabs a{
+  display:block;padding:6px 14px;border:1px solid transparent;border-radius:var(--r-pill);
+  font-size:12.5px;font-weight:600;line-height:1.3;
   color:var(--muted);text-decoration:none;white-space:nowrap;
 }
-.verswitch a:hover{color:var(--ink)}
-.verswitch .cur{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
-.verswitch a:focus-visible,#theme:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-#theme{
-  flex:none;width:34px;height:34px;padding:0;border-radius:999px;border:1px solid var(--line);
-  background:var(--panel);color:var(--ink);font-size:15px;line-height:1;cursor:pointer;
+.verswitch a:hover,.tabs a:hover{color:var(--ink);background:var(--panel-2)}
+/* Sisi yang sedang aktif bukan tautan: mengkliknya hanya akan memuat ulang halaman dan membuang hash
+   (#kode / #mos). Jangan dijadikan anchor hanya demi kesimetrisan gaya.
+   Tepi --line-2 wajib ada: isian --accent-soft saja hanya 1,2–1,4:1 terhadap kartu, jadi isian itu
+   sendiri tidak cukup menandai keadaan "aktif". */
+.verswitch .cur,.tabs a[aria-current="page"]{background:var(--panel);color:var(--ink);border-color:var(--line-2)}
+.tabs{overflow-x:auto;scrollbar-width:none;margin:14px 0 12px}
+.tabs::-webkit-scrollbar{display:none}
+/* overflow-x:auto membuat .tabs memotong di kedua sumbu, jadi cincin fokus di luar tab akan terpangkas
+   tinggal 1px. Digambar ke dalam saja; jarak dalam tab (6px) cukup untuk garis 2px. */
+.tabs a:focus-visible{outline-offset:-2px}
+
+/* ================= Chip ================= */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center;font-size:12px;color:var(--muted)}
+.chip{
+  padding:5px 12px;border-radius:var(--r-pill);font-size:12px;font-weight:600;
+  background:var(--bg-2);border:1px solid var(--line-2);color:var(--muted);
 }
-#theme:hover{border-color:var(--accent)}
+.chip:not(.chip-static):hover{background:var(--panel-2);color:var(--ink);border-color:var(--ink-2)}
+/* Keterangan, bukan tombol: dipakai untuk nama sektor di kartu hasil Lite. Bentuknya sengaja dibuat sama
+   dengan pil status (lebih kecil, huruf lebih tebal, tepi --line), bukan sama dengan chip yang bisa diklik —
+   dan hover-nya dimatikan di atas, karena label yang menyala saat disentuh adalah janji palsu. */
+.chip-static{cursor:default;padding:2px 9px;font-size:11px;font-weight:700;letter-spacing:.02em;border-color:var(--line)}
+
+/* ================= Pil status =================
+   .pill (Lite), .badge (dibuat statusBadge() di engine.js), dan .lk (dibuat lkBadge() di engine.js) adalah
+   komponen yang sama dengan tiga nama. Nama-nama itu TIDAK BOLEH diganti — engine.js yang menulisnya dan
+   teks panduan di index.html menuliskannya apa adanya. Jadi ketiganya hanya dikelompokkan di sini.
+   Catatan: status "few" sengaja memakai b-na / p-na; tidak ada kelas b-few. */
+.pill,.badge,.lk{
+  display:inline-block;padding:2px 9px;border-radius:var(--r-pill);
+  font-size:11px;font-weight:700;letter-spacing:.02em;line-height:1.55;
+  white-space:nowrap;border:1px solid transparent;flex:none;
+}
+/* "Murah" tidak lagi berupa blok hijau penuh. Hijau pekat di sini membuat label keterangan terbaca seperti
+   tombol beli, dan itu persis yang tidak boleh dilakukan alat bantu belajar. Keluarga --good, bukan --accent:
+   ini label yang dibaca, dan --accent dipakai hanya untuk yang bisa ditekan. Bedanya dengan "Agak murah"
+   hanya ketebalan tepi — pembeda sebenarnya ada pada katanya sendiri, yang selalu ada di dalam pilnya. */
+.p-buy,.b-buy{background:var(--good-bg);color:var(--good);border-color:var(--good)}
+.p-under,.b-under,.lk-ok{background:var(--good-bg);color:var(--good);border-color:var(--good-line)}
+.p-fair,.b-fair,.p-na,.b-na,.lk-na{background:var(--bg-2);color:var(--muted);border-color:var(--line-2)}
+.p-over,.b-over,.lk-old{background:var(--bad-bg);color:var(--bad);border-color:var(--bad-line)}
+.p-warn,.lk-late{background:var(--warn-bg);color:var(--warn);border-color:var(--warn-line)}
+
+/* ================= Umpan balik ================= */
+.spin{
+  display:inline-block;width:13px;height:13px;flex:none;vertical-align:-2px;
+  border:2px solid var(--line-2);border-top-color:var(--accent);border-radius:50%;
+  animation:sp .8s linear infinite;
+}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* Rel bar wajib punya tepi 1px --line-2: isiannya sengaja dibuat mendekati permukaannya supaya setiap
+   isian dan penanda di ATASNYA lolos 3:1, dan itu membuat siluet relnya sendiri hilang. */
+.progress{height:4px;background:var(--bar);border:1px solid var(--line-2);border-radius:var(--r-pill);overflow:hidden;margin-top:10px}
+.progress i{display:block;height:100%;background:var(--accent);border-radius:var(--r-pill);transition:width .3s}
+
+.empty{padding:32px 16px;text-align:center;color:var(--muted);font-size:13px;line-height:1.6}
+
+/* Glifnya diposisikan absolut, bukan lewat flex: isi pita ini kalimat utuh dengan beberapa <b> di dalamnya,
+   dan display:flex akan menjadikan tiap <b> satu kolom sendiri sehingga kalimatnya pecah. */
+.warnbar{
+  position:relative;margin-top:12px;padding:10px 14px 10px 34px;border-radius:var(--r-md);
+  background:var(--warn-bg);color:var(--ink);font-size:12.5px;line-height:1.55;
+  border:1px solid var(--warn-line);
+}
+.warnbar::before{content:"\25B2";position:absolute;left:13px;top:10px;color:var(--warn);font-size:11px;line-height:1.6}
+.warnbar b{color:var(--warn)}
+/* Tautan di dalam pita kuning memakai --ink: mint di atas kuning hangat saling bertabrakan. */
+.warnbar a{color:var(--ink);text-decoration:underline;text-decoration-color:var(--warn)}
+
+/* Judul bagian kecil bergaya kapital dengan titik aksen — menggantikan judul 15–17px yang membuat setiap
+   panel terlihat seperti jendela terpisah. */
+.sechead{
+  display:flex;align-items:center;gap:7px;margin:0 0 10px;
+  font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+}
+.sechead::before{content:"";width:5px;height:5px;border-radius:var(--r-pill);background:var(--accent);flex:none}
+
+.pagefoot{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);font-size:12px;line-height:1.6;color:var(--muted)}
+
+/* ================= Pita informasi atas =================
+   Bentuk "ticker" diambil, geraknya tidak. Teks berjalan adalah isyarat "pasar bergerak tanpa Anda" yang
+   paling kuat, dan itu justru arti yang harus dihindari alat ini. Isinya satu baris diam: kalimat literasi
+   + satu angka nyata yang memang sudah dihitung halaman. */
+/* Tepinya --line-2, bukan --line: isian --bg-2 hanya 1,04:1 terhadap --bg di tema gelap, jadi tanpa garis
+   yang benar-benar terlihat pita ini tidak terbaca sebagai pita sama sekali. */
+.ticker{
+  background:var(--bg-2);border-bottom:1px solid var(--line-2);
+  font-size:11.5px;line-height:1.4;color:var(--muted);
+}
+.ticker .in{
+  max-width:1300px;margin:0 auto;padding:7px 16px;
+  display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;
+}
+.ticker b{color:var(--ink);font-weight:650}
+.ticker .dot{width:5px;height:5px;border-radius:var(--r-pill);background:var(--accent);flex:none}
+.ticker .num{color:var(--ink-2)}
+.ticker .num:empty{display:none}
+
+/* ================= Bilah atas ================= */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap;
+  padding:14px 0 12px;border-bottom:1px solid var(--line);
+}
+.topbar .brand{min-width:0;flex:1 1 260px}
+/* Tanda kotak membulat buatan sendiri, murni CSS: tidak ada berkas gambar dan tidak meniru lambang siapa pun. */
+.topbar .brand h1::before{
+  content:"";display:inline-block;width:18px;height:18px;border-radius:6px;
+  background:var(--accent);vertical-align:-3px;margin-right:9px;
+}
+.topright{display:flex;align-items:center;gap:8px;flex:none;margin-left:auto}
+/* Isi #theme ditulis engine.js (b.textContent = ikon emoji) setiap applyTheme() dipanggil, jadi markup anak
+   apa pun yang ditaruh di sini akan terhapus. Tombol ini hanya boleh berisi satu glif teks. */
+#theme{
+  flex:none;width:32px;height:32px;padding:0;border-radius:var(--r-pill);
+  border:1px solid var(--line-2);background:var(--bg-2);color:var(--ink);
+  font-size:15px;line-height:1;cursor:pointer;
+}
+#theme:hover{background:var(--panel-2);border-color:var(--ink-2);color:var(--ink)}
+
 @media(max-width:420px){
-  .verswitch a,.verswitch .cur{padding:5px 11px}
+  .verswitch a,.verswitch .cur,.tabs a{padding:6px 11px}
   .topright{gap:6px}
+  .topbar{gap:8px}
+  .topbar .brand h1{font-size:16px}
+  .ticker .in{gap:4px 10px}
 }

@@ -7,122 +7,169 @@
 <link rel="stylesheet" href="ui.css">
 <script src="engine.js"></script>
 <style>
-*{box-sizing:border-box}
-[hidden]{display:none !important}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-.wrap{max-width:720px;margin:0 auto;padding:20px 16px 48px}
-h1{font-size:21px;margin:0}
-h2{font-size:15px;margin:0 0 10px}
-a{color:var(--accent)}
-.sub{color:var(--muted);font-size:13px}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
-.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-button{font:inherit;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer}
-button:hover{border-color:var(--accent)}
-button:disabled{opacity:.6;cursor:default}
-input{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:11px 12px}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-
-.warnbar{margin-top:14px;padding:10px 13px;border-radius:10px;background:var(--warn-bg);font-size:13px;border:1px solid var(--line)}
-.warnbar b{color:var(--warn)}
+/* Hanya yang khusus halaman Lite. Dasarnya — reset, body, .panel, tombol, kolom isian, bentuk kotak cari,
+   chip, pil status, .spin, .progress, .empty, .warnbar, bilah atas, dan pita informasi — ada di ui.css,
+   supaya versi Lite dan Pro tidak pelan-pelan berbeda bentuknya lagi. */
+:root{--font-size:15px}
+.wrap{max-width:720px}
+.ticker .in{max-width:720px}
+/* Dua sasaran fokus lewat program (tabindex="-1"): judul kartu hasil dan judul daftar. Keduanya bukan
+   kontrol, jadi tidak diberi cincin saat difokuskan dari kode; cincin keyboard tetap lewat :focus-visible. */
+#rtitle:focus:not(:focus-visible),#list-title:focus:not(:focus-visible){outline:none}
 
 /* ---- Kotak cari ---- */
 .search{margin-top:14px}
-.search form{display:flex;gap:8px}
-.search input{flex:1;min-width:0;font-size:17px;text-transform:uppercase;letter-spacing:.5px}
-.search button[type=submit]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600;padding:11px 20px}
-/* iOS Safari memperbesar halaman bila kolom isian < 16px mendapat fokus. */
-@media(max-width:600px){input{font-size:16px}}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center;font-size:12.5px;color:var(--muted)}
-.chip{padding:4px 11px;border-radius:999px;font-size:12.5px}
-.msg{margin-top:10px;font-size:13.5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.msg.err{color:var(--bad)}
-.msg .why{color:var(--muted);flex-basis:100%}
-.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--bar);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite;flex:none}
-@keyframes sp{to{transform:rotate(360deg)}}
+/* renderMsg() menulis el.className utuh ("msg" / "msg err"), jadi kelas tata letak apa pun yang ditaruh di
+   #msg lewat HTML akan terhapus pada render pertama: semuanya harus menempel pada .msg sendiri. Saat kosong
+   kotaknya dikempiskan, bukan di-display:none, agar tidak ada lompatan tata letak. */
+.msg{margin-top:12px;padding:9px 12px;border-radius:var(--r-md);background:var(--bg-2);border:1px solid var(--line-2);font-size:12.5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:fit-content;max-width:100%}
+.msg:empty{padding:0;margin:0;border:0;background:none}
+.msg.err{color:var(--bad);background:var(--bad-bg);border-color:var(--bad-line)}
+.msg .why{color:var(--muted);flex-basis:100%;font-size:12px}
 
 /* ---- Kartu hasil ---- */
 .result{margin-top:14px}
-.rhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.rhead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
 .rhead h2{margin:0;font-size:15px;font-weight:400}
-.rcode{font-size:19px;font-weight:700}
-.rname{color:var(--muted);font-size:13px}
-.verdict{margin-top:14px;padding:16px;border-radius:10px;text-align:center;background:var(--neutral-bg)}
-.verdict.v-buy{background:var(--good);color:var(--panel)}
-.verdict.v-under{background:var(--good-bg);color:var(--good)}
-.verdict.v-fair{background:var(--neutral-bg);color:var(--ink)}
-.verdict.v-over{background:var(--bad-bg);color:var(--bad)}
-.verdict.v-na{background:var(--neutral-bg);color:var(--muted)}
-.vlabel{font-size:25px;font-weight:700;letter-spacing:.3px;line-height:1.2}
-.vsub{font-size:14px;margin-top:4px;opacity:.95}
-.prices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;text-align:center}
-.prices .b{border:1px solid var(--line);border-radius:10px;padding:11px 8px}
-.prices .l{font-size:12px;color:var(--muted)}
-.prices .v{font-size:21px;font-weight:650;font-variant-numeric:tabular-nums;margin-top:2px}
+.rcode{display:block;font-size:22px;font-weight:800;letter-spacing:-.02em}
+.rname{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
+
+/* Putusan tetap jadi tokoh utamanya, tapi tidak lagi berupa blok hijau pekat: hijau penuh selebar kartu
+   membuat sebuah keterangan terbaca seperti tombol beli. Tiap keadaan dapat tint + palang tepi kiri +
+   glif sendiri, jadi perbedaannya tidak hanya warna (penting untuk mata yang sulit membedakan merah-hijau).
+   Glifnya sengaja bukan segitiga: ▲ sudah berarti "peringatan" di pita penting dan di catatan kuning, jadi
+   putusan memakai keluarga belah ketupat/lingkaran/kotak — terisi untuk yang lebih kuat, berongga untuk yang
+   lebih lemah — supaya Murah dan Agak murah tetap terbedakan tanpa warna. */
+.verdict{position:relative;margin-top:16px;padding:18px 16px 18px 48px;border-radius:var(--r-md);text-align:left;background:var(--bg-2);border:1px solid var(--line-2);box-shadow:inset 3px 0 0 var(--line-2)}
+.verdict::before{position:absolute;left:17px;top:50%;transform:translateY(-50%);font-size:19px;line-height:1}
+/* Murah dan Agak murah sama-sama keluarga hijau: bedanya tepi pekat + palang 4px + glif terisi. */
+.verdict.v-buy{background:var(--good-bg);border-color:var(--good);color:var(--good);box-shadow:inset 4px 0 0 var(--good)}
+.verdict.v-buy::before{content:"\25C6"}
+.verdict.v-under{background:var(--good-bg);border-color:var(--good-line);color:var(--good);box-shadow:inset 3px 0 0 var(--good)}
+.verdict.v-under::before{content:"\25C7"}
+.verdict.v-fair{background:var(--neutral-bg);border-color:var(--line-2);color:var(--ink);box-shadow:inset 3px 0 0 var(--muted)}
+.verdict.v-fair::before{content:"\25CB";color:var(--muted)}
+.verdict.v-over{background:var(--bad-bg);border-color:var(--bad-line);color:var(--bad);box-shadow:inset 3px 0 0 var(--bad)}
+.verdict.v-over::before{content:"\25A0"}
+.verdict.v-na{background:var(--neutral-bg);border-color:var(--line-2);color:var(--muted);box-shadow:inset 3px 0 0 var(--muted)}
+.verdict.v-na::before{content:"?"}
+.vlabel{font-size:22px;font-weight:700;letter-spacing:-.01em;line-height:1.2}
+/* --muted, bukan opacity: dulu keterangan ini mewarisi warna variannya dan ikut memudar di atas tiap tint. */
+.vsub{font-size:13px;margin-top:3px;color:var(--muted)}
+
+.prices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;text-align:left}
+.prices .b{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px}
+/* Kotak kedua (perkiraan wajar) bertepi hijau, menyambung ke penanda hijau di garis skala di bawahnya. */
+.prices .b:last-child{border-color:var(--good-line)}
+.prices .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);line-height:1.35}
+.prices .v{font-size:22px;font-weight:700;font-family:var(--mono-num);font-variant-numeric:tabular-nums;letter-spacing:-.01em;margin-top:4px}
+/* Di bawah 360px dua kotak berdampingan memaksa "Rp 2.710" patah setelah "Rp", jadi ditumpuk saja. */
+@media(max-width:360px){.prices{grid-template-columns:1fr}}
 
 /* Garis posisi harga di antara perkiraan terendah & tertinggi. Kedua penanda sengaja ditaruh di ketinggian berbeda
    (harga di atas garis, nilai wajar di bawahnya) supaya tidak pernah saling menutupi saat angkanya berdekatan;
-   keterangannya ada di baris legenda di bawah. */
-.scale{margin:20px 4px 0;position:relative;height:50px}
-.scale .track{position:absolute;left:0;right:0;top:4px;height:8px;border-radius:4px;background:var(--bar)}
-.scale .band{position:absolute;top:4px;height:8px;border-radius:4px;background:var(--good-bg);border:1px solid var(--good)}
-.scale .fair{position:absolute;top:6px;width:3px;height:14px;margin-left:-1.5px;background:var(--good);border-radius:2px}
-.scale .now{position:absolute;top:-2px;width:3px;height:14px;margin-left:-1.5px;background:var(--ink);border-radius:2px}
-.scale .ends{position:absolute;top:24px;left:0;right:0;display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted)}
-.legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12px;color:var(--muted);margin:0 4px}
+   keterangannya ada di baris legenda di bawah.
+   Lebar penanda wajib tetap 3px: margin-left:-1.5px adalah separuhnya, dan jepitan 0,6%–99,4% di scaleHtml()
+   adalah separuh lainnya dari hitungan yang sama. Bentuk ujung yang berbeda (belah ketupat untuk harga,
+   lingkaran untuk nilai wajar) ditambahkan agar keduanya juga terbedakan tanpa warna. */
+.scale{margin:20px 4px 0;position:relative;height:52px}
+.scale .track{position:absolute;left:0;right:0;top:4px;height:6px;border-radius:var(--r-pill);background:var(--bar);border:1px solid var(--line-2)}
+.scale .band{position:absolute;top:4px;height:6px;border-radius:var(--r-pill);background:var(--good-bg);border:1px solid var(--good-line)}
+.scale .fair{position:absolute;top:6px;width:3px;height:16px;margin-left:-1.5px;background:var(--good);border-radius:2px}
+.scale .fair::after{content:"";position:absolute;left:50%;bottom:-4px;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:var(--good)}
+.scale .now{position:absolute;top:-4px;width:3px;height:16px;margin-left:-1.5px;background:var(--ink);border-radius:2px}
+.scale .now::after{content:"";position:absolute;left:50%;top:-4px;width:7px;height:7px;margin-left:-3.5px;background:var(--ink);transform:rotate(45deg)}
+.scale .ends{position:absolute;top:26px;left:0;right:0;display:flex;justify-content:space-between;font-size:11px;font-family:var(--mono-num);color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11.5px;color:var(--muted);margin:10px 4px 0}
 .legend span{display:flex;align-items:center;gap:5px}
-.legend i{width:3px;height:13px;border-radius:2px;display:inline-block}
+.legend i{width:3px;height:13px;border-radius:2px;display:inline-block;position:relative;flex:none}
+.legend i.k-now{background:var(--ink)}
+.legend i.k-now::after{content:"";position:absolute;left:50%;top:-3px;width:6px;height:6px;margin-left:-3px;background:var(--ink);transform:rotate(45deg)}
+.legend i.k-fair{background:var(--good)}
+.legend i.k-fair::after{content:"";position:absolute;left:50%;bottom:-3px;width:6px;height:6px;margin-left:-3px;border-radius:50%;background:var(--good)}
+.legend i.k-band{width:14px;height:8px;border-radius:var(--r-pill);background:var(--good-bg);border:1px solid var(--good-line)}
 
-.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px;text-align:center}
-.facts > div{border:1px solid var(--line);border-radius:10px;padding:9px 6px}
-.facts .l{font-size:11.5px;color:var(--muted);line-height:1.3}
-.facts .v{font-size:16px;font-weight:650;font-variant-numeric:tabular-nums;margin-top:3px}
-@media(max-width:420px){.facts .l{font-size:11px}}
+.rsum{margin:16px 0 0;font-size:13.5px;line-height:1.6;color:var(--muted)}
+.rsum b{color:var(--ink);font-weight:650;font-variant-numeric:tabular-nums}
 
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px;text-align:left}
+.facts > div{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-md);padding:10px 12px}
+.facts .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);line-height:1.35}
+.facts .v{font-size:17px;font-weight:700;font-family:var(--mono-num);font-variant-numeric:tabular-nums;margin-top:3px}
+/* Ketiga labelnya panjang ("Harga ÷ nilai buku"), jadi di layar tersempit turun ke dua kolom,
+   bukan dikecilkan lagi hurufnya. */
+@media(max-width:420px){.facts .l{font-size:10px;letter-spacing:.02em}}
+@media(max-width:380px){.facts{grid-template-columns:1fr 1fr}}
+
+/* Tiap catatan diberi glif sesuai tingkat bahayanya. Ini bukan hiasan: kuning (waspada) dan merah (bahaya)
+   berdekatan bagi sebagian mata yang sulit membedakan merah-hijau, jadi bentuk inilah pembedanya.
+   .flag juga dipakai sendirian di luar .flags — listNote() mengeluarkan satu. */
 .flags{margin-top:14px;display:flex;flex-direction:column;gap:7px}
-.flag{font-size:13px;padding:9px 11px;border-radius:9px;background:var(--neutral-bg);color:var(--ink)}
-.flag.w{background:var(--warn-bg)}
-.flag.b{background:var(--bad-bg);color:var(--bad)}
+.flag{position:relative;font-size:12.5px;line-height:1.55;padding:10px 12px 10px 34px;border-radius:var(--r-md);background:var(--bg-2);border:1px solid var(--line-2);color:var(--ink)}
+.flag::before{content:"\25CF";position:absolute;left:12px;top:10px;font-size:11px;line-height:1.6;color:var(--muted)}
+.flag.w{background:var(--warn-bg);border-color:var(--warn-line)}
+.flag.w::before{content:"\25B2";color:var(--warn)}
+.flag.b{background:var(--bad-bg);border-color:var(--bad-line);color:var(--bad)}
+.flag.b::before{content:"\2716";color:var(--bad)}
+.flag b{color:inherit;font-weight:650}
+.listnote{margin-top:10px}
 
-details.exp{margin-top:14px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
-details.exp summary{cursor:pointer;padding:11px 13px;font-weight:600;font-size:14px;list-style:none;display:flex;gap:8px;align-items:center}
+/* Kelas exp wajib tetap: render() membaca r.querySelector("details.exp")?.open dan memasangnya kembali
+   tiap kali kartu digambar ulang. Kedua penekan penanda bawaan juga wajib tetap ada. */
+details.exp{margin-top:14px;border:1px solid var(--line-2);border-radius:var(--r-md);background:var(--bg-2);overflow:hidden}
+details.exp summary{cursor:pointer;padding:12px 14px;font-weight:650;font-size:13px;list-style:none;display:flex;gap:10px;align-items:center}
+/* overflow:hidden di atas (yang menjaga sudut membulatnya) akan memotong habis cincin fokus <summary>,
+   karena cincin itu digambar 2px DI LUAR kotaknya. Jadi di sini digambar ke dalam. */
+details.exp summary:focus-visible{outline-offset:-3px}
 details.exp summary::-webkit-details-marker{display:none}
-details.exp summary::before{content:"▸";color:var(--muted)}
-details.exp[open] summary::before{content:"▾"}
-details.exp .body{padding:0 13px 13px;font-size:13.5px;line-height:1.6;color:var(--ink)}
+details.exp summary::before{content:"";flex:none;width:6px;height:6px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(-45deg);margin-left:2px;transition:transform .15s}
+details.exp[open] summary::before{transform:rotate(45deg)}
+details.exp[open] summary{border-bottom:1px solid var(--line);background:var(--panel-2)}
+details.exp .body{padding:12px 14px;font-size:13px;line-height:1.65;color:var(--muted)}
 details.exp .body p{margin:0 0 9px}
-details.exp .body b{font-weight:650}
-.foot{margin-top:14px;font-size:12.5px;color:var(--muted)}
+details.exp .body p:last-child{margin:0}
+details.exp .body b{font-weight:650;color:var(--ink)}
+/* Kaki di dalam kartu hasil. Kaki halaman memakai .pagefoot di ui.css: dua komponen berbeda yang dulu
+   terlanjur memakai satu nama. */
+.foot{margin-top:16px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 
 /* ---- Daftar "Lagi murah" ---- */
 .listsec{margin-top:20px}
-.progress{height:6px;background:var(--bar);border-radius:3px;overflow:hidden;margin-top:8px}
-.progress i{display:block;height:100%;background:var(--accent);transition:width .3s}
-.rows{display:flex;flex-direction:column;gap:7px;margin-top:12px}
-.rowbtn{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;border-radius:10px;background:var(--bg)}
-.rowbtn .rk{color:var(--muted);font-weight:650;font-variant-numeric:tabular-nums;width:18px;flex:none}
-.rowbtn .cd{font-weight:650;width:58px;flex:none}
+.rows{display:flex;flex-direction:column;gap:2px;margin-top:10px}
+/* Barisnya bukan .panel lagi, jadi tepinya, latarnya, dan jarak dalamnya ditulis di sini. */
+.rowbtn{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:9px 12px;border-radius:var(--r-sm);background:transparent;border:1px solid transparent;font-size:13px;font-weight:400;color:var(--ink)}
+.rowbtn:hover{background:var(--panel-2);border-color:var(--line-2)}
+/* Tanpa penonjolan tiga teratas: ini ujung sebuah urutan, bukan juara dan bukan daftar anjuran. Nomornya
+   sudah ada di lencana dan di aria-label ("peringkat n dari m"). */
+.rowbtn .rk{flex:none;width:20px;height:20px;display:grid;place-items:center;border-radius:6px;background:var(--bg-2);color:var(--muted);font-size:10.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.rowbtn .cd{font-weight:700;width:62px;flex:none;letter-spacing:.01em}
 .rowbtn .nm{color:var(--muted);font-size:12.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rowbtn .ds{font-weight:650;font-variant-numeric:tabular-nums;flex:none;color:var(--good)}
+/* Seukuran kode emitennya, tidak lebih besar: angka diskon bukan tokoh utama baris ini. */
+.rowbtn .ds{font-weight:650;font-size:13px;font-family:var(--mono-num);font-variant-numeric:tabular-nums;flex:none;color:var(--good)}
 /* Baris terpilih ditandai palang tebal di tepi kiri, bukan warna saja (dan aria-current untuk pembaca layar). */
-.rowbtn.sel{border-color:var(--accent);box-shadow:inset 4px 0 0 var(--accent)}
-@media(max-width:480px){.rowbtn .nm{display:none}}
-.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:650;flex:none}
-.p-buy{background:var(--good);color:var(--panel)}
-.p-under{background:var(--good-bg);color:var(--good)}
-.p-fair{background:var(--neutral-bg);color:var(--muted)}
-.p-over{background:var(--bad-bg);color:var(--bad)}
-.p-na{background:var(--neutral-bg);color:var(--muted)}
-.p-warn{background:var(--warn-bg);color:var(--warn)}
-.empty{padding:26px 10px;text-align:center;color:var(--muted);font-size:13.5px}
+.rowbtn.sel{background:var(--panel-2);border-color:var(--line-2);box-shadow:inset 3px 0 0 var(--accent)}
+/* Di layar sempit baris dengan dua pil (mis. "Murah" + "laba kecil") tidak muat: semua anaknya flex:none,
+   jadi angka diskonnya terdorong keluar kartu. Dibiarkan membungkus ke baris kedua. */
+@media(max-width:480px){
+  .rowbtn{flex-wrap:wrap}
+  .rowbtn .nm{display:none}
+  .rowbtn .ds{margin-left:auto}
+}
 </style>
 </head>
 <body>
+<!-- Pita atas: bentuknya diambil dari papan berjalan, geraknya tidak. Teks yang bergerak sendiri adalah isyarat
+     "pasar jalan tanpa Anda", dan itu justru yang tidak boleh disugestikan alat bantu belajar. Isinya satu baris
+     diam: kalimat literasi + satu angka nyata yang memang sudah dihitung halaman ini. -->
+<div class="ticker"><div class="in">
+  <span class="dot"></span><b>Alat bantu belajar</b> — bukan saran beli atau jual saham.
+  <span class="num" id="tick-stat"></span>
+</div></div>
+
 <div class="wrap">
   <div class="topbar">
     <div class="brand">
       <h1>Cek Harga Saham</h1>
-      <div class="sub">Ketik kode saham, lalu lihat perkiraan apakah harganya sedang murah, wajar, atau mahal.</div>
     </div>
     <div class="topright">
       <div class="verswitch" role="group" aria-label="Pilih versi tampilan">
@@ -131,6 +178,8 @@ details.exp .body b{font-weight:650}
       <button id="theme" type="button"></button>
     </div>
   </div>
+
+  <div class="lead">Ketik kode saham, lalu lihat perkiraan apakah harganya sedang murah, wajar, atau mahal.</div>
 
   <div class="warnbar"><b>Penting:</b> ini alat bantu belajar, <b>bukan saran beli atau jual saham</b>. Angkanya hitungan
     otomatis dari data Yahoo Finance yang bisa terlambat atau keliru. Keputusan dan risikonya tetap milik Anda.</div>
@@ -153,7 +202,7 @@ details.exp .body b{font-weight:650}
 
   <div class="listsec">
     <div class="panel">
-      <h2 id="list-title" tabindex="-1">Lagi murah</h2>
+      <h2 class="sechead" id="list-title" tabindex="-1">Lagi murah</h2>
       <div class="sub" id="list-desc"></div>
       <div id="list-prog"></div>
       <div class="rows" id="rows"></div>
@@ -161,7 +210,7 @@ details.exp .body b{font-weight:650}
     </div>
   </div>
 
-  <div class="foot">
+  <div class="pagefoot">
     Nilai wajar dihitung dari beberapa metode valuasi (nilai buku, PER, PBV historis, Graham, DCF, dan lainnya), lalu
     diringkas jadi satu angka. Rincian tiap metode, asumsi yang bisa diubah, dan disclaimer lengkap ada di
     <a href="index.html">versi Pro</a>.
@@ -203,6 +252,7 @@ let busyCode = null;     // kode yang sedang dicari lewat kotak cari
 let reqSeq = 0;          // nomor pencarian terakhir: jawaban yang lebih lama tidak boleh menimpa yang lebih baru
 let errMsg = "";         // pesan gagal dari kotak cari
 let infoMsg = "";        // pemberitahuan biasa (bukan kegagalan)
+let fileMsg = "";        // halaman dibuka lewat file:// — berlaku terus, jadi diperiksa paling awal
 let LP = null;           // progres pemindaian daftar: {total, done, failed, why}
 let renderTimer = 0, pauseTimer = 0, pauseSeen = false;
 
@@ -264,8 +314,12 @@ function watchPause(){
 
 function renderMsg(){
   const el = $("msg"), why = pauseLine();
+  // Diperiksa paling awal dan tidak pernah hilang: tanpa server scan tidak ada satu pun tombol yang berguna.
+  if(fileMsg) return void(el.className = "msg err", el.textContent = fileMsg);
+  // Kalimatnya dibungkus satu <span>: .msg adalah kotak flex, jadi tiap potongan teks di antara elemen akan
+  // jadi item sendiri dan gap 8px menyisip di tengah kalimat.
   if(busyCode) return void(el.className = "msg",
-    el.innerHTML = `<span class="spin"></span>Mengambil data <b>${esc(busyCode)}</b>…${why ? `<span class="why">${esc(why)}</span>` : ""}`);
+    el.innerHTML = `<span class="spin"></span><span>Mengambil data <b>${esc(busyCode)}</b>…</span>${why ? `<span class="why">${esc(why)}</span>` : ""}`);
   if(errMsg) return void(el.className = "msg err", el.textContent = errMsg);
   if(infoMsg) return void(el.className = "msg", el.textContent = infoMsg);
   el.className = "msg"; el.textContent = "";
@@ -299,9 +353,9 @@ function scaleHtml(v){
     <div class="ends"><span>Rp ${fmtN(lo)}</span><span>Rp ${fmtN(hi)}</span></div>
   </div>
   <div class="legend">
-    <span><i style="background:var(--ink)"></i>Harga sekarang (di atas garis)</span>
-    <span><i style="background:var(--good)"></i>Perkiraan wajar (di bawah garis)</span>
-    <span><i style="background:var(--good-bg);border:1px solid var(--good);width:14px"></i>Rentang ${v.n} metode</span>
+    <span><i class="k-now"></i>Harga sekarang (di atas garis)</span>
+    <span><i class="k-fair"></i>Perkiraan wajar (di bawah garis)</span>
+    <span><i class="k-band"></i>Rentang ${v.n} metode</span>
   </div>`;
 }
 
@@ -365,8 +419,8 @@ function resultHtml(){
   const v = value(s), V = VERDICT[v.status], kabur = vague(v);
   return `<div class="panel" role="region" aria-labelledby="rtitle">
     <div class="rhead">
-      <h2 id="rtitle" tabindex="-1" data-fk="title"><span class="rcode">${esc(v.code)}</span> <span class="rname">${esc(v.name || "")}</span></h2>
-      <div class="sub">${esc(sectorName(v.sector))}</div>
+      <h2 id="rtitle" tabindex="-1" data-fk="title"><span class="rcode">${esc(v.code)}</span><span class="rname">${esc(v.name || "")}</span></h2>
+      <span class="chip chip-static">${esc(sectorName(v.sector))}</span>
     </div>
     <div class="verdict ${V.cls}">
       <div class="vlabel">${V.label}</div>
@@ -377,7 +431,7 @@ function resultHtml(){
       <div class="b"><div class="l">Perkiraan harga wajar</div><div class="v">${kabur ? "–" : "Rp " + fmtN(v.fair)}</div></div>
     </div>
     ${kabur ? "" : scaleHtml(v)}
-    <p style="margin:16px 0 0;font-size:14px">${summarySentence(v)}</p>
+    <p class="rsum">${summarySentence(v)}</p>
     <div class="facts">
       <div><div class="l">Harga ÷ nilai buku</div><div class="v">${fmtX(v.pbv)}</div></div>
       <div><div class="l">Harga ÷ laba setahun</div><div class="v">${fmtX(v.per)}</div></div>
@@ -427,9 +481,9 @@ function listNote(){
   const top = Object.entries(LP.why).sort((a,b)=>b[1]-a[1])[0];
   const why = top ? top[0] : pauseWhy();
   const akibat = LP.failed >= LP.total ? "jadi daftar ini belum ada isinya" : "jadi daftar ini belum lengkap";
-  return `<div class="flag w" style="margin-top:10px">${LP.failed} dari ${LP.total} saham gagal diambil
+  return `<div class="flag w listnote">${LP.failed} dari ${LP.total} saham gagal diambil
     (${esc(why)}), ${akibat}.
-    <button class="chip" id="list-retry" style="margin-left:4px">Coba lagi</button></div>`;
+    <button class="chip" id="list-retry">Coba lagi</button></div>`;
 }
 function renderList(){
   const universe = listCodes("mos"), scanned = universe.filter(c=>DATA[c]).length;
@@ -440,6 +494,11 @@ function renderList(){
     : rows.length
       ? `${rows.length} saham dengan selisih harga terbesar di bawah perkiraan wajar, dari ${scanned} saham LQ45 dan Syariah (JII) yang sudah diperiksa.`
       : `Dari ${scanned} saham LQ45 dan Syariah (JII) yang sudah diperiksa.`;
+  // Angka di pita atas diisi dari keadaan yang memang sudah dihitung di sini, dan hanya ditulis saat berubah
+  // supaya render tiap 250 ms tidak terus-menerus menyentuh DOM.
+  const tick = `${scanned}/${universe.length} saham LQ45 + JII sudah diperiksa`;
+  const tickEl = $("tick-stat");
+  if(tickEl && tickEl.textContent !== tick) tickEl.textContent = tick;
   const why = pauseLine();
   setProg(busy
     ? `<div class="progress"><i style="width:${(LP.done/LP.total*100).toFixed(1)}%"></i></div>${why ? `<div class="sub" style="margin-top:6px">${esc(why)}</div>` : ""}`
@@ -449,7 +508,7 @@ function renderList(){
     // Nama perusahaan disembunyikan di layar sempit, jadi isi barisnya diulang lengkap di aria-label.
     const label = `${s.code}${s.name ? ", " + s.name : ""}, ${V.label}, ${fmtP(s.mos,0)} di bawah perkiraan harga wajar`
       + (lemah ? ", laba dibanding modalnya kecil" : "") + `, peringkat ${i+1} dari ${rows.length}`;
-    return `<button class="rowbtn panel${s.code===shown ? " sel" : ""}" data-c="${esc(s.code)}"
+    return `<button class="rowbtn${s.code===shown ? " sel" : ""}" data-c="${esc(s.code)}"
       aria-label="${esc(label)}"${s.code===shown ? ' aria-current="true"' : ""}>
       <span class="rk">${i+1}</span>
       <span class="cd">${esc(s.code)}</span>
@@ -510,10 +569,9 @@ function init(){
   applyTheme();
   $("theme").onclick = cycleTheme;
 
-  if(location.protocol==="file:"){
-    $("msg").className = "msg err";
-    $("msg").textContent = "Halaman ini perlu server scan. Buka lewat jalankan.bat (alamat http://localhost:8765), bukan dengan klik dua kali file HTML.";
-  }
+  // Lewat state, bukan langsung ke DOM: render() pertama di akhir init() akan menimpa isi #msg.
+  if(location.protocol==="file:")
+    fileMsg = "Halaman ini perlu server scan. Buka lewat jalankan.bat (alamat http://localhost:8765), bukan dengan klik dua kali file HTML.";
 
   $("form").onsubmit = e=>{ e.preventDefault(); lookUp($("code").value); $("code").value = ""; };
   document.addEventListener("click", e=>{

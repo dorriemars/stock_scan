@@ -35,7 +35,13 @@ Daftar konstituen ada di konstanta `INDEXES` di `app/public/engine.js` (beserta 
 ## Struktur
 
 - `app/public/engine.js`: mesin bersama kedua halaman — `INDEXES`, metode valuasi, `value()`, penyimpanan hasil scan di localStorage, antrean permintaan ke API, status laporan keuangan, dan tema. **Semua perubahan perhitungan dilakukan di sini**, supaya versi Lite dan Pro tidak pernah berbeda angkanya.
-- `app/public/ui.css`: warna tema terang/gelap dan bilah atas (tombol Lite/Pro + tombol tema) yang dipakai kedua halaman
+- `app/public/ui.css`: **sistem desain bersama** — token warna tema terang/gelap, token sudut/jarak/huruf, dan
+  komponen dasar yang dipakai kedua halaman (reset, panel, tombol, kolom isian, kotak cari, chip, pil status,
+  bilah atas dengan tombol Lite/Pro + tombol tema, pita informasi, bar progres, cincin fokus). **Perubahan
+  tampilan yang berlaku di kedua versi dilakukan di sini**; `<style>` di tiap halaman hanya untuk yang khas
+  halaman itu. Dua pasang token yang mudah tertukar: `--line` garis rambut dekoratif vs `--line-2` batas yang
+  wajib terlihat (≥ 3:1) untuk setiap kontrol, dan `--accent` hanya untuk yang bisa ditekan vs `--good` untuk
+  angka dan label yang dibaca.
 - `app/public/index.html`: halaman versi Pro
 - `app/public/lite.html`: halaman versi Lite
 - `app/api/scan.py`: endpoint `GET /api/scan?code=BBRI`; di Vercel menjadi entrypoint Python (`app/pyproject.toml`)
