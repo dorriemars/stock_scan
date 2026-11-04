@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cek Harga Saham · versi sederhana</title>
+<link rel="stylesheet" href="ui.css">
+<script src="engine.js"></script>
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:720px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:21px;margin:0}
+h2{font-size:15px;margin:0 0 10px}
+a{color:var(--accent)}
+.sub{color:var(--muted);font-size:13px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+button{font:inherit;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:disabled{opacity:.6;cursor:default}
+input{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:11px 12px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.warnbar{margin-top:14px;padding:10px 13px;border-radius:10px;background:var(--warn-bg);font-size:13px;border:1px solid var(--line)}
+.warnbar b{color:var(--warn)}
+
+/* ---- Kotak cari ---- */
+.search{margin-top:14px}
+.search form{display:flex;gap:8px}
+.search input{flex:1;min-width:0;font-size:17px;text-transform:uppercase;letter-spacing:.5px}
+.search button[type=submit]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600;padding:11px 20px}
+/* iOS Safari memperbesar halaman bila kolom isian < 16px mendapat fokus. */
+@media(max-width:600px){input{font-size:16px}}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center;font-size:12.5px;color:var(--muted)}
+.chip{padding:4px 11px;border-radius:999px;font-size:12.5px}
+.msg{margin-top:10px;font-size:13.5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.msg.err{color:var(--bad)}
+.msg .why{color:var(--muted);flex-basis:100%}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--bar);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite;flex:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ---- Kartu hasil ---- */
+.result{margin-top:14px}
+.rhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.rhead h2{margin:0;font-size:15px;font-weight:400}
+.rcode{font-size:19px;font-weight:700}
+.rname{color:var(--muted);font-size:13px}
+.verdict{margin-top:14px;padding:16px;border-radius:10px;text-align:center;background:var(--neutral-bg)}
+.verdict.v-buy{background:var(--good);color:var(--panel)}
+.verdict.v-under{background:var(--good-bg);color:var(--good)}
+.verdict.v-fair{background:var(--neutral-bg);color:var(--ink)}
+.verdict.v-over{background:var(--bad-bg);color:var(--bad)}
+.verdict.v-na{background:var(--neutral-bg);color:var(--muted)}
+.vlabel{font-size:25px;font-weight:700;letter-spacing:.3px;line-height:1.2}
+.vsub{font-size:14px;margin-top:4px;opacity:.95}
+.prices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;text-align:center}
+.prices .b{border:1px solid var(--line);border-radius:10px;padding:11px 8px}
+.prices .l{font-size:12px;color:var(--muted)}
+.prices .v{font-size:21px;font-weight:650;font-variant-numeric:tabular-nums;margin-top:2px}
+
+/* Garis posisi harga di antara perkiraan terendah & tertinggi. Kedua penanda sengaja ditaruh di ketinggian berbeda
+   (harga di atas garis, nilai wajar di bawahnya) supaya tidak pernah saling menutupi saat angkanya berdekatan;
+   keterangannya ada di baris legenda di bawah. */
+.scale{margin:20px 4px 0;position:relative;height:50px}
+.scale .track{position:absolute;left:0;right:0;top:4px;height:8px;border-radius:4px;background:var(--bar)}
+.scale .band{position:absolute;top:4px;height:8px;border-radius:4px;background:var(--good-bg);border:1px solid var(--good)}
+.scale .fair{position:absolute;top:6px;width:3px;height:14px;margin-left:-1.5px;background:var(--good);border-radius:2px}
+.scale .now{position:absolute;top:-2px;width:3px;height:14px;margin-left:-1.5px;background:var(--ink);border-radius:2px}
+.scale .ends{position:absolute;top:24px;left:0;right:0;display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12px;color:var(--muted);margin:0 4px}
+.legend span{display:flex;align-items:center;gap:5px}
+.legend i{width:3px;height:13px;border-radius:2px;display:inline-block}
+
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px;text-align:center}
+.facts > div{border:1px solid var(--line);border-radius:10px;padding:9px 6px}
+.facts .l{font-size:11.5px;color:var(--muted);line-height:1.3}
+.facts .v{font-size:16px;font-weight:650;font-variant-numeric:tabular-nums;margin-top:3px}
+@media(max-width:420px){.facts .l{font-size:11px}}
+
+.flags{margin-top:14px;display:flex;flex-direction:column;gap:7px}
+.flag{font-size:13px;padding:9px 11px;border-radius:9px;background:var(--neutral-bg);color:var(--ink)}
+.flag.w{background:var(--warn-bg)}
+.flag.b{background:var(--bad-bg);color:var(--bad)}
+
+details.exp{margin-top:14px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+details.exp summary{cursor:pointer;padding:11px 13px;font-weight:600;font-size:14px;list-style:none;display:flex;gap:8px;align-items:center}
+details.exp summary::-webkit-details-marker{display:none}
+details.exp summary::before{content:"▸";color:var(--muted)}
+details.exp[open] summary::before{content:"▾"}
+details.exp .body{padding:0 13px 13px;font-size:13.5px;line-height:1.6;color:var(--ink)}
+details.exp .body p{margin:0 0 9px}
+details.exp .body b{font-weight:650}
+.foot{margin-top:14px;font-size:12.5px;color:var(--muted)}
+
+/* ---- Daftar "Lagi murah" ---- */
+.listsec{margin-top:20px}
+.progress{height:6px;background:var(--bar);border-radius:3px;overflow:hidden;margin-top:8px}
+.progress i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.rows{display:flex;flex-direction:column;gap:7px;margin-top:12px}
+.rowbtn{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;border-radius:10px;background:var(--bg)}
+.rowbtn .rk{color:var(--muted);font-weight:650;font-variant-numeric:tabular-nums;width:18px;flex:none}
+.rowbtn .cd{font-weight:650;width:58px;flex:none}
+.rowbtn .nm{color:var(--muted);font-size:12.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rowbtn .ds{font-weight:650;font-variant-numeric:tabular-nums;flex:none;color:var(--good)}
+/* Baris terpilih ditandai palang tebal di tepi kiri, bukan warna saja (dan aria-current untuk pembaca layar). */
+.rowbtn.sel{border-color:var(--accent);box-shadow:inset 4px 0 0 var(--accent)}
+@media(max-width:480px){.rowbtn .nm{display:none}}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:650;flex:none}
+.p-buy{background:var(--good);color:var(--panel)}
+.p-under{background:var(--good-bg);color:var(--good)}
+.p-fair{background:var(--neutral-bg);color:var(--muted)}
+.p-over{background:var(--bad-bg);color:var(--bad)}
+.p-na{background:var(--neutral-bg);color:var(--muted)}
+.p-warn{background:var(--warn-bg);color:var(--warn)}
+.empty{padding:26px 10px;text-align:center;color:var(--muted);font-size:13.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">
+      <h1>Cek Harga Saham</h1>
+      <div class="sub">Ketik kode saham, lalu lihat perkiraan apakah harganya sedang murah, wajar, atau mahal.</div>
+    </div>
+    <div class="topright">
+      <div class="verswitch" role="group" aria-label="Pilih versi tampilan">
+        <span class="cur" aria-current="page">Lite</span><a href="index.html">Pro</a>
+      </div>
+      <button id="theme" type="button"></button>
+    </div>
+  </div>
+
+  <div class="warnbar"><b>Penting:</b> ini alat bantu belajar, <b>bukan saran beli atau jual saham</b>. Angkanya hitungan
+    otomatis dari data Yahoo Finance yang bisa terlambat atau keliru. Keputusan dan risikonya tetap milik Anda.</div>
+
+  <div class="panel search">
+    <form id="form">
+      <input id="code" placeholder="Kode saham, mis. BBRI" autocomplete="off" aria-label="Kode saham" autofocus>
+      <button type="submit" id="go">Cek</button>
+    </form>
+    <div class="chips">Coba:
+      <button class="chip" data-c="BBRI">BBRI</button><button class="chip" data-c="TLKM">TLKM</button>
+      <button class="chip" data-c="ASII">ASII</button><button class="chip" data-c="UNVR">UNVR</button>
+      <button class="chip" data-c="ADRO">ADRO</button>
+    </div>
+    <div id="msg"></div>
+    <div class="sr" id="live" role="status" aria-live="polite"></div>
+  </div>
+
+  <div id="result" class="result"></div>
+
+  <div class="listsec">
+    <div class="panel">
+      <h2 id="list-title" tabindex="-1">Lagi murah</h2>
+      <div class="sub" id="list-desc"></div>
+      <div id="list-prog"></div>
+      <div class="rows" id="rows"></div>
+      <div class="empty" id="rows-empty" hidden></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    Nilai wajar dihitung dari beberapa metode valuasi (nilai buku, PER, PBV historis, Graham, DCF, dan lainnya), lalu
+    diringkas jadi satu angka. Rincian tiap metode, asumsi yang bisa diubah, dan disclaimer lengkap ada di
+    <a href="index.html">versi Pro</a>.
+  </div>
+</div>
+
+<script>
+// Versi Lite: satu kotak cari + daftar saham termurah. Semua perhitungan, penyimpanan, dan antrean scan memakai
+// engine.js yang sama dengan versi Pro, jadi angka di kedua versi selalu sama.
+
+// Tanpa engine.js seluruh skrip ini mati sementara halamannya tetap tergambar lengkap: kotak cari yang tidak
+// menghasilkan apa-apa lebih membingungkan daripada pesan galat.
+if(typeof readJSON === "undefined"){
+  document.getElementById("msg").className = "msg err";
+  document.getElementById("msg").textContent =
+    "Halaman gagal dimuat sepenuhnya: engine.js tidak terbaca, jadi tombol di halaman ini tidak berfungsi. Muat ulang halaman (Ctrl+F5).";
+  throw new Error("engine.js tidak dimuat");
+}
+
+const LITE_N = 10;                 // batas jumlah baris daftar "Lagi murah"
+const LS_LAST = "idx-scanner-lite-terakhir";
+const AGG_WORD = {median:"nilai tengah", mean:"rata-rata", min:"angka paling rendah"};
+
+// Status dari value() diterjemahkan ke bahasa sehari-hari. Keterangan "Wajar" menyebut batasnya (FAIR_BAND di
+// engine.js) supaya tidak pernah bertabrakan dengan kalimat ringkas di bawahnya.
+const VERDICT = {
+  buy:   {cls:"v-buy",   pill:"p-buy",   label:"Murah",           sub:"Harga jauh di bawah perkiraan wajar"},
+  under: {cls:"v-under", pill:"p-under", label:"Agak murah",      sub:"Harga sedikit di bawah perkiraan wajar"},
+  fair:  {cls:"v-fair",  pill:"p-fair",  label:"Wajar",           sub:`Harga masih di sekitar perkiraan wajar (sampai ${fmtN(FAIR_BAND*100)}% di atasnya)`},
+  over:  {cls:"v-over",  pill:"p-over",  label:"Mahal",           sub:`Harga lebih dari ${fmtN(FAIR_BAND*100)}% di atas perkiraan wajar`},
+  few:   {cls:"v-na",    pill:"p-na",    label:"Belum bisa dinilai", sub:"Data emiten ini terlalu sedikit untuk dihitung"},
+  na:    {cls:"v-na",    pill:"p-na",    label:"Belum bisa dinilai", sub:"Nilai wajarnya tidak bisa dihitung dari data yang ada"},
+};
+// Nilai wajar belum layak jadi patokan: angka besarnya disembunyikan, bukan cuma diberi catatan kecil.
+const vague = v => v.status==="few" || v.status==="na" || v.fair==null;
+
+let shown = null;        // kode yang sedang ditampilkan di kartu hasil
+let busyCode = null;     // kode yang sedang dicari lewat kotak cari
+let reqSeq = 0;          // nomor pencarian terakhir: jawaban yang lebih lama tidak boleh menimpa yang lebih baru
+let errMsg = "";         // pesan gagal dari kotak cari
+let infoMsg = "";        // pemberitahuan biasa (bukan kegagalan)
+let LP = null;           // progres pemindaian daftar: {total, done, failed, why}
+let renderTimer = 0, pauseTimer = 0, pauseSeen = false;
+
+function scheduleRender(){ if(!renderTimer) renderTimer = setTimeout(()=>{ renderTimer = 0; render(); }, 250); }
+function announce(text){ $("live").textContent = text; }
+
+// ---------- Kotak cari ----------
+function lookUp(raw){
+  const codes = parseCodes(raw), code = codes[0];
+  if(!code){
+    errMsg = "Ketik dulu kode sahamnya, misalnya BBRI.";
+    infoMsg = ""; busyCode = null; render(); announce(errMsg); return;
+  }
+  if(!/^[A-Z]{2,6}$/.test(code)){
+    errMsg = `"${code}" bukan kode saham yang benar. Kode saham IDX hanya terdiri dari huruf, misalnya BBRI.`;
+    infoMsg = ""; busyCode = null; render(); announce(errMsg); return;
+  }
+  const prev = shown, req = ++reqSeq;
+  busyCode = code; errMsg = ""; shown = code;
+  // Versi Pro menerima banyak kode sekaligus; di sini sisanya dilewati, jadi katakan sekalian.
+  infoMsg = codes.length > 1
+    ? `Versi ini mengecek satu saham sekali jalan, jadi ${codes.slice(1).join(", ")} dilewati. Beberapa kode sekaligus bisa di versi Pro.`
+    : "";
+  render();
+  fetchStock(code, {urgent:true}).then(s=>{
+    if(req !== reqSeq) return;        // pengguna sudah mencari kode lain: jangan tukar kartunya
+    shown = s.code;
+    saveHist(h => [s.code, ...h.filter(x=>x!==s.code)]);
+    try{ localStorage.setItem(LS_LAST, s.code); }catch(e){}
+    announce(verdictText(s.code));
+  }).catch(e=>{
+    if(req !== reqSeq) return;
+    errMsg = `${code}: ${e.message}`;
+    // Gagal: kembalikan kartu yang tadi dibaca, jangan dikosongkan.
+    if(shown===code && !DATA[code]) shown = prev;
+    announce(errMsg);
+  }).finally(()=>{ if(req === reqSeq){ busyCode = null; render(); } });
+}
+// Yang diumumkan ke pembaca layar adalah jawabannya, bukan sekadar "selesai".
+function verdictText(code){
+  const s = DATA[code];
+  if(!s) return `${code} belum ada datanya.`;
+  const V = VERDICT[value(s).status];
+  return `${code}: ${V.label}. ${V.sub}.`;
+}
+// Jeda bersama di engine.js (10–60 detik setelah 429 / jaringan putus) tidak boleh terlihat seperti halaman macet.
+function pauseLine(){
+  const ms = pausedUntil();
+  return ms > 0 ? `Menunggu ${Math.ceil(ms/1000)} detik: ${pauseWhy()}.` : "";
+}
+function watchPause(){
+  const on = pausedUntil() > 0;
+  if(on && !pauseSeen){ pauseSeen = true; announce(`Pemeriksaan dijeda sebentar: ${pauseWhy()}.`); }
+  if(on && !pauseTimer) pauseTimer = setInterval(()=>{
+    if(pausedUntil() <= 0){ clearInterval(pauseTimer); pauseTimer = 0; pauseSeen = false; }
+    render();
+  }, 1000);
+}
+
+function renderMsg(){
+  const el = $("msg"), why = pauseLine();
+  if(busyCode) return void(el.className = "msg",
+    el.innerHTML = `<span class="spin"></span>Mengambil data <b>${esc(busyCode)}</b>…${why ? `<span class="why">${esc(why)}</span>` : ""}`);
+  if(errMsg) return void(el.className = "msg err", el.textContent = errMsg);
+  if(infoMsg) return void(el.className = "msg", el.textContent = infoMsg);
+  el.className = "msg"; el.textContent = "";
+}
+
+// ---------- Kartu hasil ----------
+// Kalimat ringkas: harga sekarang dibanding perkiraan nilai wajar.
+function summarySentence(v){
+  const price = `Rp ${fmtN(v.price)}`;
+  if(vague(v)) return `Harga ${esc(v.code)} sekarang <b>${price}</b>. Data yang ada belum cukup untuk memperkirakan harga wajarnya, jadi halaman ini belum menilai murah atau mahalnya.`;
+  const fair = `Rp ${fmtN(v.fair)}`;
+  // Di bawah setengah persen angkanya dibulatkan jadi "0%": sebut saja sama, jangan "0% lebih murah".
+  if(Math.abs(v.mos) < 0.005) return `Harga sekarang <b>${price}</b>, kira-kira sama dengan perkiraan harga wajarnya (<b>${fair}</b>).`;
+  if(v.mos > 0) return `Harga sekarang <b>${price}</b>, sedangkan perkiraan harga wajarnya <b>${fair}</b>. Jadi harga sekarang sekitar <b>${fmtP(v.mos,0)} lebih murah</b> dari perkiraan itu.`;
+  // MoS tidak punya batas bawah: "1.119% lebih mahal" tidak berarti apa-apa, jadi sebut kelipatannya.
+  if(v.mos < -1) return `Harga sekarang <b>${price}</b>, sedangkan perkiraan harga wajarnya <b>${fair}</b>. Jadi harga sekarang sekitar <b>${fmtN(v.price/v.fair,1)}x</b> perkiraan itu.`;
+  return `Harga sekarang <b>${price}</b>, sedangkan perkiraan harga wajarnya <b>${fair}</b>. Jadi harga sekarang sekitar <b>${fmtP(-v.mos,0)} lebih mahal</b> dari perkiraan itu.`;
+}
+
+// Posisi harga di antara perkiraan terendah dan tertinggi dari metode yang terpakai.
+function scaleHtml(v){
+  if(v.lo==null || v.hi==null || v.fair==null || !(v.hi > v.lo)) return "";
+  const lo = Math.min(v.lo, v.price), hi = Math.max(v.hi, v.price), span = hi - lo;
+  // Penanda digambar dari titik tengahnya (margin-left −1,5px), jadi dijepit agar tidak keluar dari garis.
+  const pct = x => `${Math.min(99.4, Math.max(0.6, (x - lo) / span * 100)).toFixed(1)}%`;
+  return `<div class="scale">
+    <div class="track"></div>
+    <div class="band" style="left:${pct(v.lo)};right:${(100 - (v.hi - lo) / span * 100).toFixed(1)}%"></div>
+    <div class="fair" style="left:${pct(v.fair)}"></div>
+    <div class="now" style="left:${pct(v.price)}"></div>
+    <div class="ends"><span>Rp ${fmtN(lo)}</span><span>Rp ${fmtN(hi)}</span></div>
+  </div>
+  <div class="legend">
+    <span><i style="background:var(--ink)"></i>Harga sekarang (di atas garis)</span>
+    <span><i style="background:var(--good)"></i>Perkiraan wajar (di bawah garis)</span>
+    <span><i style="background:var(--good-bg);border:1px solid var(--good);width:14px"></i>Rentang ${v.n} metode</span>
+  </div>`;
+}
+
+// Catatan penting yang harus dibaca orang awam sebelum mempercayai angkanya.
+function flagsHtml(v){
+  const f = [], murahan = v.status==="buy" || v.status==="under";
+  if(v.status==="few") f.push(["w", `Hanya ${v.n} dari ${A.minN} metode minimal yang bisa dihitung untuk saham ini, jadi perkiraan nilai wajarnya belum bisa dipakai.`]);
+  // Ekuitas habis dimakan rugi: keadaan neraca paling buruk yang bisa ditemui, jadi disebut paling tegas.
+  if(!(v.bvps > 0)) f.push(["b", "Nilai buku (aset bersih per saham) perusahaan ini <b>nol atau negatif</b>, jadi perbandingan harga terhadap nilai buku tidak bisa dipakai dan sisa perkiraannya jauh lebih rapuh."]);
+  if(v.weak==="Rugi") f.push(["b", "Perusahaan ini sedang <b>rugi</b>. Perkiraan nilai wajarnya hanya dari nilai aset, dan saham yang terlihat murah saat rugi sering kali murah karena memang bermasalah."]);
+  else if(v.weak==="ROE↓") f.push(["w", (v.roe!=null && v.roe < 0
+    ? `Perusahaan ini <b>merugi atas modalnya</b> (ROE ${fmtP(v.roe,1)}).`
+    : `Keuntungan dibanding modalnya kecil (ROE ${fmtP(v.roe,1)}).`)
+    + (murahan ? " Jadi belum tentu murah meski harganya terlihat rendah." : "")]);
+  if(isStale(v)) f.push(["w", `Data ini diambil ${esc(fmtT(v.at))} dan sudah agak lama; harga serta angkanya bisa berbeda sekarang. Tekan "Cek ulang" di bawah untuk memperbaruinya.`]);
+  const lk = lkInfo(v);
+  if(lk.key==="late") f.push(["w", `Laporan keuangan terakhir yang dipakai adalah ${esc(lk.q)}; laporan ${esc(lk.want)} belum ada di Yahoo Finance.`]);
+  else if(lk.key==="old") f.push(["b", `Laporan keuangan yang dipakai sudah tertinggal: masih ${esc(lk.q)}, padahal seharusnya sudah ada ${esc(lk.want)}.`]);
+  else if(lk.key==="na") f.push(["w", "Periode laporan keuangan tidak diketahui dari data Yahoo Finance."]);
+  if(v.partial?.length) f.push(["w", `Sebagian data gagal diambil (${esc(v.partial.join(", "))}), jadi perkiraannya kurang lengkap. Coba cek lagi beberapa saat lagi.`]);
+  if(v.pbv!=null && v.pbv < 1) f.push(["", "Harga saham ini di bawah nilai bukunya (aset bersih per saham)."]);
+  return f.length ? `<div class="flags">${f.map(([c,t])=>`<div class="flag ${c}">${t}</div>`).join("")}</div>` : "";
+}
+
+// Asumsi hitungan dipakai bersama versi Pro lewat localStorage, jadi penjelasannya ikut asumsi yang berlaku,
+// bukan angka bawaan yang ditulis tangan.
+const methodCount = () => METHODS.filter(m=>A.on[m.id]).length;
+const asumsiDiubah = () => Object.keys(DEFAULTS).some(k => k==="on"
+  ? METHODS.some(m => !!A.on[m.id] !== !!DEFAULTS.on[m.id])
+  : A[k] !== DEFAULTS[k]);
+function explainerHtml(){
+  const agg = AGG_WORD[A.agg] || "nilai tengah";
+  return `<div class="body">
+    <p><b>Perkiraan harga wajar</b> adalah ${agg} dari sampai ${methodCount()} cara menghitung harga saham: dari nilai
+      aset perusahaan, dari labanya, dari dividennya, dan dari arus kasnya. Tiap cara memberi angka berbeda, dan yang
+      dipakai di sini adalah ${agg} dari semuanya. Ini perkiraan kasar, bukan harga yang "seharusnya".</p>
+    <p><b>Murah / wajar / mahal</b> hanya membandingkan harga sekarang dengan perkiraan tadi. Disebut
+      <b>Murah</b> bila harga minimal ${fmtN(A.mos)}% di bawah perkiraan, <b>Agak murah</b> bila di bawah tapi
+      belum sebanyak itu, <b>Wajar</b> bila harga masih dalam ${fmtN(FAIR_BAND*100)}% di atas perkiraan, dan
+      <b>Mahal</b> bila lebih dari itu. Dua pengecualian: perusahaan yang sedang rugi tidak pernah diberi label
+      <b>Murah</b>, dan saham yang cara hitungnya kurang dari ${fmtN(A.minN)} tidak diberi label sama sekali.</p>
+    ${asumsiDiubah() ? `<p><b>Catatan:</b> asumsi hitungan di browser ini sudah diubah dari bawaannya lewat
+      <a href="index.html#home">versi Pro</a>, jadi angka di halaman ini mengikuti asumsi itu.</p>` : ""}
+    <p><b>Harga ÷ nilai buku</b> (PBV) membandingkan harga dengan kekayaan bersih perusahaan per saham. Di bawah
+      1x berarti harga saham lebih murah daripada nilai aset bersihnya di atas kertas.</p>
+    <p><b>Harga ÷ laba setahun</b> (PER) kira-kira berapa tahun laba perusahaan untuk menutup harga sahamnya,
+      kalau labanya tetap segitu. Semakin kecil semakin murah, tapi angka kecil juga bisa berarti pasar
+      memperkirakan labanya akan turun.</p>
+    <p><b>Dividen setahun</b> adalah dividen 12 bulan terakhir dibagi harga sekarang. Dividen masa lalu tidak
+      menjamin dividen tahun depan.</p>
+    <p>Harga saham naik-turun karena banyak hal yang tidak dihitung di sini: prospek bisnis, kualitas manajemen,
+      utang, kondisi ekonomi, dan sentimen pasar. Saham yang terlihat murah bisa saja murah karena ada masalah
+      yang belum terlihat di laporan keuangan.</p>
+  </div>`;
+}
+
+function resultHtml(){
+  if(!shown) return "";
+  const s = DATA[shown];
+  if(!s) return "";   // sedang diambil: pesannya ada di kotak cari
+  const v = value(s), V = VERDICT[v.status], kabur = vague(v);
+  return `<div class="panel" role="region" aria-labelledby="rtitle">
+    <div class="rhead">
+      <h2 id="rtitle" tabindex="-1" data-fk="title"><span class="rcode">${esc(v.code)}</span> <span class="rname">${esc(v.name || "")}</span></h2>
+      <div class="sub">${esc(sectorName(v.sector))}</div>
+    </div>
+    <div class="verdict ${V.cls}">
+      <div class="vlabel">${V.label}</div>
+      <div class="vsub">${V.sub}</div>
+    </div>
+    <div class="prices">
+      <div class="b"><div class="l">Harga sekarang</div><div class="v">${v.price==null ? "–" : "Rp " + fmtN(v.price)}</div></div>
+      <div class="b"><div class="l">Perkiraan harga wajar</div><div class="v">${kabur ? "–" : "Rp " + fmtN(v.fair)}</div></div>
+    </div>
+    ${kabur ? "" : scaleHtml(v)}
+    <p style="margin:16px 0 0;font-size:14px">${summarySentence(v)}</p>
+    <div class="facts">
+      <div><div class="l">Harga ÷ nilai buku</div><div class="v">${fmtX(v.pbv)}</div></div>
+      <div><div class="l">Harga ÷ laba setahun</div><div class="v">${fmtX(v.per)}</div></div>
+      <div><div class="l">Dividen setahun</div><div class="v">${v.dy ? fmtP(v.dy,1) : "–"}</div></div>
+    </div>
+    ${flagsHtml(v)}
+    <details class="exp">
+      <summary data-fk="exp">Apa artinya angka-angka ini?</summary>
+      ${explainerHtml()}
+    </details>
+    <div class="foot">Data diambil ${esc(fmtT(v.at))} dari Yahoo Finance.
+      <button class="chip" data-fk="recheck" data-recheck="${esc(v.code)}" ${busyCode ? "disabled" : ""}>Cek ulang</button>
+      · <a href="index.html#home" data-fk="pro">Lihat hitungan lengkapnya di versi Pro</a></div>
+  </div>`;
+}
+
+// ---------- Daftar "Lagi murah" ----------
+// Gabungan konstituen LQ45 + JII, diurutkan dari diskon terbesar. Dikecualikan: emiten rugi, yang metodenya kurang,
+// yang tidak punya nilai wajar, dan yang sebagian datanya gagal diambil — diskon semu dari data tak lengkap tidak
+// boleh naik ke peringkat atas. Laba tipis (ROE↓) tetap masuk tapi diberi penanda di barisnya.
+function cheapest(){
+  return listCodes("mos").filter(c=>DATA[c]).map(c=>value(DATA[c]))
+    .filter(s => s.mos!=null && s.mos>0 && s.status!=="few" && s.weak!=="Rugi" && !s.partial?.length)
+    .sort((a,b)=>b.mos-a.mos).slice(0, LITE_N);
+}
+function scanList(){
+  const codes = listCodes("mos").filter(c => isStale(DATA[c]));
+  LP = {total: codes.length, done: 0, failed: 0, why: {}};
+  if(!codes.length){ render(); return; }
+  announce(`Memeriksa ${codes.length} saham…`);
+  render();
+  codes.forEach(c => fetchStock(c).catch(e=>{
+    LP.failed++;
+    // Sebab sebenarnya per kegagalan: 404 (konstituen yang sudah berganti) jangan dilaporkan sebagai rate limit.
+    const w = e.message || "sebab tidak diketahui";
+    LP.why[w] = (LP.why[w] || 0) + 1;
+  }).finally(()=>{
+    LP.done++;
+    if(LP.done >= LP.total) announce(`Pemeriksaan selesai: ${LP.total - LP.failed} dari ${LP.total} saham berhasil.`);
+    scheduleRender();
+  }));
+}
+// Gagal diam-diam adalah masalah terbesar di sini: daftar yang pendek karena gangguan jaringan terlihat sama
+// dengan daftar yang memang pendek. Jadi kegagalannya selalu ditampilkan beserta tombol coba lagi.
+function listNote(){
+  if(!LP || LP.done < LP.total || !LP.failed) return "";
+  const top = Object.entries(LP.why).sort((a,b)=>b[1]-a[1])[0];
+  const why = top ? top[0] : pauseWhy();
+  const akibat = LP.failed >= LP.total ? "jadi daftar ini belum ada isinya" : "jadi daftar ini belum lengkap";
+  return `<div class="flag w" style="margin-top:10px">${LP.failed} dari ${LP.total} saham gagal diambil
+    (${esc(why)}), ${akibat}.
+    <button class="chip" id="list-retry" style="margin-left:4px">Coba lagi</button></div>`;
+}
+function renderList(){
+  const universe = listCodes("mos"), scanned = universe.filter(c=>DATA[c]).length;
+  const busy = LP && LP.done < LP.total;
+  const rows = cheapest();
+  $("list-desc").textContent = busy
+    ? `Memeriksa ${LP.total} saham LQ45 dan Syariah (JII)… ${LP.done} selesai.`
+    : rows.length
+      ? `${rows.length} saham dengan selisih harga terbesar di bawah perkiraan wajar, dari ${scanned} saham LQ45 dan Syariah (JII) yang sudah diperiksa.`
+      : `Dari ${scanned} saham LQ45 dan Syariah (JII) yang sudah diperiksa.`;
+  const why = pauseLine();
+  setProg(busy
+    ? `<div class="progress"><i style="width:${(LP.done/LP.total*100).toFixed(1)}%"></i></div>${why ? `<div class="sub" style="margin-top:6px">${esc(why)}</div>` : ""}`
+    : listNote());
+  setRows(rows.map((s,i)=>{
+    const V = VERDICT[s.status], lemah = s.weak==="ROE↓";
+    // Nama perusahaan disembunyikan di layar sempit, jadi isi barisnya diulang lengkap di aria-label.
+    const label = `${s.code}${s.name ? ", " + s.name : ""}, ${V.label}, ${fmtP(s.mos,0)} di bawah perkiraan harga wajar`
+      + (lemah ? ", laba dibanding modalnya kecil" : "") + `, peringkat ${i+1} dari ${rows.length}`;
+    return `<button class="rowbtn panel${s.code===shown ? " sel" : ""}" data-c="${esc(s.code)}"
+      aria-label="${esc(label)}"${s.code===shown ? ' aria-current="true"' : ""}>
+      <span class="rk">${i+1}</span>
+      <span class="cd">${esc(s.code)}</span>
+      <span class="nm">${esc(s.name || "")}</span>
+      <span class="pill ${V.pill}">${V.label}</span>
+      ${lemah ? '<span class="pill p-warn">laba kecil</span>' : ""}
+      <span class="ds">${fmtP(s.mos,0)}</span>
+    </button>`;
+  }).join(""));
+  const empty = $("rows-empty");
+  empty.hidden = rows.length > 0;
+  empty.textContent = busy ? "Sedang memeriksa…"
+    : scanned ? "Tidak ada saham yang harganya di bawah perkiraan wajar saat ini."
+    : LP && LP.failed ? "Daftar belum bisa dimuat. Tekan tombol “Coba lagi” di atas."
+    : "Belum ada data daftar. Muat ulang halaman untuk memindai lagi.";
+}
+// Halaman digambar ulang tiap 250 ms selama pemindaian daftar. Menulis innerHTML yang isinya sama saja akan
+// membuang fokus keyboard, teks yang sedang diblok, dan posisi gulir di dalamnya, jadi tulis hanya bila berubah.
+function setIfChanged(el, html){
+  if(el.dataset.html === html) return false;
+  el.dataset.html = html;
+  el.innerHTML = html;
+  return true;
+}
+// Fokus keyboard dikembalikan ke elemen yang sama saat isinya memang berubah.
+function setFocusable(el, html, attr){
+  const a = document.activeElement;
+  const key = a && el.contains(a) ? a.getAttribute(attr) || "" : "";
+  if(!setIfChanged(el, html)) return false;
+  if(key) el.querySelector(`[${attr}="${CSS.escape(key)}"]`)?.focus({preventScroll:true});
+  return true;
+}
+const setRows = html => setFocusable($("rows"), html, "data-c");
+const setProg = html => setFocusable($("list-prog"), html, "id");
+function focusResult(){
+  const h = $("rtitle");
+  if(!h) return;
+  h.focus({preventScroll:true});
+  h.scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+// ---------- Render ----------
+function render(){
+  renderMsg();
+  watchPause();
+  const r = $("result");
+  const keepOpen = r.querySelector("details.exp")?.open;
+  if(setFocusable(r, resultHtml(), "data-fk")){
+    const d = r.querySelector("details.exp");
+    if(d && keepOpen) d.open = true;
+  }
+  renderList();
+}
+
+function init(){
+  loadStore();
+  onScan = scheduleRender;
+  applyTheme();
+  $("theme").onclick = cycleTheme;
+
+  if(location.protocol==="file:"){
+    $("msg").className = "msg err";
+    $("msg").textContent = "Halaman ini perlu server scan. Buka lewat jalankan.bat (alamat http://localhost:8765), bukan dengan klik dua kali file HTML.";
+  }
+
+  $("form").onsubmit = e=>{ e.preventDefault(); lookUp($("code").value); $("code").value = ""; };
+  document.addEventListener("click", e=>{
+    if(e.target.closest("#list-retry")){
+      // Tanpa reset, `strikes` di engine.js masih >= 3 dan kegagalan pertama langsung menghentikan antrean lagi.
+      resetScanPause(); scanList();
+      announce("Memeriksa ulang daftar."); $("list-title").focus({preventScroll:true});
+      return;
+    }
+    const chip = e.target.closest(".chip[data-c]");
+    if(chip) return lookUp(chip.dataset.c);
+    const again = e.target.closest("[data-recheck]");
+    if(again) return lookUp(again.dataset.recheck);
+    const row = e.target.closest(".rowbtn[data-c]");
+    if(row){
+      const c = row.dataset.c;
+      if(isStale(DATA[c])) return lookUp(c);   // jangan sajikan data lama sebagai data sekarang
+      shown = c; errMsg = ""; infoMsg = ""; reqSeq++;   // pencarian yang masih jalan tidak boleh menimpa pilihan ini
+      try{ localStorage.setItem(LS_LAST, shown); }catch(e2){}
+      render(); focusResult(); announce(verdictText(c));
+    }
+  });
+  // Tab lain menyimpan hasil scan atau mengganti tema: ikut perbarui halaman ini.
+  window.addEventListener("storage", e=>{
+    if(e.key===LS.tema || e.key===null) syncTheme();
+    if(e.key===LS.data && mergeData(readJSON(LS.data, {}))) scheduleRender();
+  });
+
+  // Kode di alamat (lite.html#BBRI) bisa dibagikan, juga saat hanya tanda pagarnya yang berubah.
+  window.addEventListener("hashchange", ()=>{ const c = parseCodes(location.hash.slice(1))[0]; if(c) lookUp(c); });
+
+  const hash = parseCodes(location.hash.slice(1))[0];
+  let last = null;
+  try{ last = localStorage.getItem(LS_LAST); }catch(e){}
+  if(hash) lookUp(hash);
+  else if(last && DATA[last]) shown = last;
+
+  render();
+  scanList();
+}
+init();
+</script>
+</body>
+</html>

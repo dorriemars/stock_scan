@@ -1,0 +1,45 @@
+/* Warna dan bilah atas yang dipakai bersama versi Pro (index.html) dan versi Lite (lite.html),
+   supaya kedua halaman punya tema terang/gelap dan tombol ganti versi yang sama persis. */
+:root{
+  color-scheme:light dark;
+  --bg:#f6f7f9; --panel:#ffffff; --ink:#15181d; --muted:#5f6773; --line:#e3e6ea;
+  --accent:#2457d6; --accent-ink:#ffffff; --good:#0e6b3c; --good-bg:#e3f4ea; --warn:#8a5200; --warn-bg:#fdf1dc;
+  --bad:#c0362c; --bad-bg:#fbe6e4; --neutral-bg:#eef0f3; --bar:#d7dbe1;
+}
+:root[data-theme="light"]{color-scheme:light}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1115; --panel:#171a20; --ink:#e8eaee; --muted:#9aa2ae; --line:#272c35;
+    --accent:#7ea2ff; --accent-ink:#0f1115; --good:#4cc68a; --good-bg:#14301f; --warn:#f0b14a; --warn-bg:#33270f;
+    --bad:#ff7b70; --bad-bg:#3a1a18; --neutral-bg:#222731; --bar:#323946;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0f1115; --panel:#171a20; --ink:#e8eaee; --muted:#9aa2ae; --line:#272c35;
+  --accent:#7ea2ff; --accent-ink:#0f1115; --good:#4cc68a; --good-bg:#14301f; --warn:#f0b14a; --warn-bg:#33270f;
+  --bad:#ff7b70; --bad-bg:#3a1a18; --neutral-bg:#222731; --bar:#323946;
+}
+
+/* Bilah atas: judul di kiri, tombol Lite/Pro dan tombol tema di pojok kanan atas. */
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px 16px;flex-wrap:wrap}
+.topbar .brand{min-width:0;flex:1 1 260px}
+.topright{display:flex;align-items:center;gap:8px;flex:none;margin-left:auto}
+.verswitch{display:flex;background:var(--neutral-bg);border:1px solid var(--line);border-radius:999px;padding:2px}
+/* Sisi yang sedang aktif bukan tautan: mengkliknya hanya akan memuat ulang halaman dan membuang hash (#kode / #mos). */
+.verswitch a,.verswitch .cur{
+  display:block;padding:5px 14px;border-radius:999px;font-size:13px;font-weight:600;line-height:1.3;
+  color:var(--muted);text-decoration:none;white-space:nowrap;
+}
+.verswitch a:hover{color:var(--ink)}
+.verswitch .cur{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.verswitch a:focus-visible,#theme:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#theme{
+  flex:none;width:34px;height:34px;padding:0;border-radius:999px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);font-size:15px;line-height:1;cursor:pointer;
+}
+#theme:hover{border-color:var(--accent)}
+@media(max-width:420px){
+  .verswitch a,.verswitch .cur{padding:5px 11px}
+  .topright{gap:6px}
+}

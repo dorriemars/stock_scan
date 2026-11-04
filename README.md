@@ -4,7 +4,16 @@ Ketik kode emiten (mis. `BBRI` atau `BBRI, TLKM, ASII`), lalu data fundamental d
 
 11 metode valuasi: nilai buku (BVPS), PBV historis, Justified PBV, Graham Number, Graham Formula, PER wajar, PER historis, Earnings Power Value, Dividend Discount Model, DCF arus kas bebas, dan EV/EBITDA. Nilai wajar = median metode yang bisa dihitung; status baru diberikan bila jumlah metode valid ≥ "Minimal metode valid" (default 5). Semua asumsi bisa diubah di halaman.
 
-## Menu
+## Dua versi tampilan
+
+Tombol **Lite / Pro** di pojok kanan atas berpindah antara keduanya, di sebelah tombol tema (ikut perangkat → terang → gelap, tersimpan dan berlaku di kedua versi).
+
+- **Pro** (`index.html`): semua menu, tabel lengkap, 11 metode, dan asumsi yang bisa diubah.
+- **Lite** (`lite.html`): untuk orang awam. Satu kotak cari dengan hasil satu kartu (murah / agak murah / wajar / mahal, harga sekarang, perkiraan harga wajar, posisi harga di antara perkiraan terendah–tertinggi, tiga rasio dalam bahasa sehari-hari, catatan peringatan, dan penjelasan "Apa artinya angka-angka ini?"), plus daftar **Lagi murah** berisi 10 saham dengan selisih terbesar di bawah perkiraan wajar dari gabungan LQ45 + JII.
+
+Keduanya memakai `app/public/engine.js` yang sama, jadi angkanya tidak bisa berbeda, dan hasil scan di satu versi langsung tersedia di versi lain.
+
+## Menu (versi Pro)
 
 - **Home**: scan kode emiten, kartu ringkasan menu, dan riwayat scan.
 - **Top 20 LQ45** / **Top 20 Syariah (JII)**: 20 konstituen teratas menurut kapitalisasi pasar (bisa diganti ke MoS terbesar).
@@ -21,11 +30,14 @@ Data Yahoo kadang keliru, jadi API memeriksanya dulu:
 - **EPS**: bila PER kosong, dari laba bersih 12 bulan ÷ jumlah saham.
 - **Gangguan Yahoo**: rate limit → HTTP 429, gangguan sementara → 502 (keduanya dicoba ulang halaman); data yang sebagian gagal diambil ditandai `partial`, tidak di-cache, dan dipindai ulang setelah 10 menit. Emiten yang memang belum punya laporan keuangan di Yahoo (mis. baru IPO) tidak dianggap gagal. Kode dinyatakan tidak ditemukan (404) hanya bila Yahoo memastikannya.
 
-Daftar konstituen ada di konstanta `INDEXES` di `app/public/index.html` (beserta periode, sumber, dan tanggal berakhir `until`; setelah tanggal itu halaman menampilkan peringatan). Perbarui tiap pergantian periode: LQ45 dievaluasi tiap 3 bulan (berlaku awal Februari, Mei, Agustus, November); JII tiap 6 bulan mengikuti Daftar Efek Syariah OJK (berlaku awal Juni & Desember).
+Daftar konstituen ada di konstanta `INDEXES` di `app/public/engine.js` (beserta periode, sumber, dan tanggal berakhir `until`; setelah tanggal itu halaman menampilkan peringatan). Perbarui tiap pergantian periode: LQ45 dievaluasi tiap 3 bulan (berlaku awal Februari, Mei, Agustus, November); JII tiap 6 bulan mengikuti Daftar Efek Syariah OJK (berlaku awal Juni & Desember).
 
 ## Struktur
 
-- `app/public/index.html`: halaman scanner
+- `app/public/engine.js`: mesin bersama kedua halaman — `INDEXES`, metode valuasi, `value()`, penyimpanan hasil scan di localStorage, antrean permintaan ke API, status laporan keuangan, dan tema. **Semua perubahan perhitungan dilakukan di sini**, supaya versi Lite dan Pro tidak pernah berbeda angkanya.
+- `app/public/ui.css`: warna tema terang/gelap dan bilah atas (tombol Lite/Pro + tombol tema) yang dipakai kedua halaman
+- `app/public/index.html`: halaman versi Pro
+- `app/public/lite.html`: halaman versi Lite
 - `app/api/scan.py`: endpoint `GET /api/scan?code=BBRI`; di Vercel menjadi entrypoint Python (`app/pyproject.toml`)
 - `server.py`: server lokal untuk halaman + API
 
@@ -41,6 +53,10 @@ Atau klik dua kali `jalankan.bat`, lalu buka http://localhost:8765.
 
 ## Deploy ke Vercel
 
-Import repo ini di dashboard Vercel dengan **Root Directory = `app`** dan Framework Preset **Other**.
+Import repo ini di dashboard Vercel dengan **Root Directory = `app`** dan Framework Preset **Other**. Push ke `main` memicu deploy.
+
+Keempat berkas di `app/public/` (`engine.js`, `ui.css`, `index.html`, `lite.html`) saling bergantung dan harus ikut
+ter-commit bersama: tanpa `engine.js` kedua halaman tetap tergambar tapi semua tombolnya mati. Jadi pakai `git add` /
+`git status --short` sebelum commit, bukan `git commit -am` yang melewatkan berkas baru.
 
 > Data Yahoo Finance bisa terlambat atau keliru. Alat bantu screening, bukan rekomendasi investasi.
